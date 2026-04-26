@@ -4,6 +4,8 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
 import ConfigCarrier from "@components/ConfigCarrier.astro";
+import DebugAuthTools from "@components/DebugAuthTools.svelte";
+import ToastStack from "@components/ToastStack.svelte";
 import { profileConfig, siteConfig } from "@/config";
 import {
 	AUTO_MODE,
@@ -152,6 +154,8 @@ const bannerOffset =
 		  data-overlayscrollbars-initialize
 	>
 		<ConfigCarrier></ConfigCarrier>
+		<ToastStack client:only="svelte"></ToastStack>
+		<DebugAuthTools client:only="svelte"></DebugAuthTools>
 		<slot />
 
 		<!-- increase the page height during page transition to prevent the scrolling animation from jumping -->
