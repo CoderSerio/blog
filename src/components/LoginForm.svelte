@@ -2,8 +2,8 @@
 import Icon from "@iconify/svelte";
 import type { User } from "@supabase/supabase-js";
 import { onMount } from "svelte";
-import { showToast } from "@/utils/toast";
 import { initializeSupabaseAuth, supabase } from "@/lib/supabaseClient";
+import { showToast } from "@/utils/toast";
 
 let email = "";
 let password = "";

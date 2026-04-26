@@ -24,10 +24,18 @@ function createSupabaseBrowserClient() {
 
 const browserGlobal = globalThis as BrowserGlobalWithSupabase;
 
+function getBrowserSupabaseClient() {
+	if (!browserGlobal.__blogSupabaseClient) {
+		browserGlobal.__blogSupabaseClient = createSupabaseBrowserClient();
+	}
+
+	return browserGlobal.__blogSupabaseClient;
+}
+
 export const supabase =
 	typeof window === "undefined"
 		? createSupabaseBrowserClient()
-		: (browserGlobal.__blogSupabaseClient ??= createSupabaseBrowserClient());
+		: getBrowserSupabaseClient();
 
 export async function initializeSupabaseAuth() {
 	return await supabase.auth.initialize();
