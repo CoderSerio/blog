@@ -9,12 +9,15 @@ let loading = false;
 const supabaseStoragePrefix = "sb-wfpgsjigghsffzujnuhh-auth-token";
 
 function isLocalhost(hostname: string) {
-	return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+	return (
+		hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+	);
 }
 
 onMount(() => {
 	const params = new URLSearchParams(window.location.search);
-	enabled = isLocalhost(window.location.hostname) && params.get("debug") === "1";
+	enabled =
+		isLocalhost(window.location.hostname) && params.get("debug") === "1";
 });
 
 async function handleSignOut() {
@@ -45,7 +48,10 @@ function handleClearAuthStorage() {
 		localStorage.removeItem(key);
 	}
 
-	showToast(`Cleared ${keysToRemove.length} Supabase auth storage item(s).`, "success");
+	showToast(
+		`Cleared ${keysToRemove.length} Supabase auth storage item(s).`,
+		"success",
+	);
 }
 </script>
 
