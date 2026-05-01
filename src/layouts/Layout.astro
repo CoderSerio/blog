@@ -2,10 +2,18 @@
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
+import "../styles/variables.styl";
+import "../styles/main.css";
+import "../styles/transition.css";
+import "../styles/scrollbar.css";
+import "../styles/markdown.css";
+import "../styles/markdown-extend.styl";
+import "../styles/expressive-code.css";
+import "../styles/photoswipe.css";
 
-import ConfigCarrier from "@components/ConfigCarrier.astro";
-import DebugAuthTools from "@components/DebugAuthTools.svelte";
-import ToastStack from "@components/ToastStack.svelte";
+import ConfigCarrier from "@components/theme/ConfigCarrier/index.astro";
+import DebugAuthTools from "@components/auth/DebugAuthTools/index.svelte";
+import ToastStack from "@components/toast/ToastStack/index.svelte";
 import { profileConfig, siteConfig } from "@/config";
 import {
 	AUTO_MODE,
@@ -277,6 +285,7 @@ function setClickOutsideToClose(panel: string, ignores: string[]) {
 	});
 }
 setClickOutsideToClose("display-setting", ["display-setting", "display-settings-switch"])
+setClickOutsideToClose("light-dark-panel", ["light-dark-panel", "scheme-switch", "scheme-switch-fallback"])
 setClickOutsideToClose("nav-menu-panel", ["nav-menu-panel", "nav-menu-switch"])
 setClickOutsideToClose("search-panel", ["search-panel", "search-bar", "search-switch"])
 

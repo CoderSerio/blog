@@ -30,3 +30,6 @@ yarn.lock
 # ide
 .idea
 *.iml
+
+# local browser debugging artifacts
+.playwright-cli/
