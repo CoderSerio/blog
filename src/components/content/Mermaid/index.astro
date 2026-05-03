@@ -1,0 +1,86 @@
+<script>
+let renderId = 0;
+
+function isDarkMode() {
+	return document.documentElement.classList.contains("dark");
+}
+
+async function renderMermaidDiagrams() {
+	const diagrams = Array.from(
+		document.querySelectorAll<HTMLElement>(".mermaid-diagram"),
+	).filter((diagram) => diagram.dataset.rendered !== "true");
+
+	if (diagrams.length === 0) {
+		return;
+	}
+
+	const { default: mermaid } = await import("mermaid");
+	mermaid.initialize({
+		startOnLoad: false,
+		securityLevel: "strict",
+		look: "handDrawn",
+		theme: isDarkMode() ? "dark" : "base",
+			themeVariables: {
+			fontFamily:
+				"'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+			primaryColor: isDarkMode() ? "#1f2937" : "#f8fafc",
+			primaryTextColor: isDarkMode() ? "#f8fafc" : "#1f2937",
+			primaryBorderColor: "#8b5cf6",
+			lineColor: "#8b5cf6",
+			secondaryColor: isDarkMode() ? "#111827" : "#ffffff",
+			tertiaryColor: isDarkMode() ? "#0f172a" : "#eef2ff",
+		},
+	});
+
+	await Promise.all(
+		diagrams.map(async (diagram) => {
+			const source = decodeURIComponent(diagram.dataset.mermaid ?? "");
+			const id = `mermaid-${Date.now()}-${renderId++}`;
+
+			try {
+				const { svg, bindFunctions } = await mermaid.render(id, source);
+				diagram.innerHTML = svg;
+				bindFunctions?.(diagram);
+				diagram.dataset.rendered = "true";
+				diagram.closest(".mermaid-pixel-frame")?.classList.remove("is-error");
+			} catch (error) {
+				console.error("Failed to render Mermaid diagram:", error);
+				diagram.textContent = source;
+				diagram.dataset.rendered = "true";
+				diagram.closest(".mermaid-pixel-frame")?.classList.add("is-error");
+			}
+		}),
+	);
+}
+
+function resetRenderedDiagrams() {
+	document.querySelectorAll<HTMLElement>(".mermaid-diagram").forEach((diagram) => {
+		diagram.dataset.rendered = "false";
+	});
+}
+
+function rerenderMermaidDiagrams() {
+	resetRenderedDiagrams();
+	renderMermaidDiagrams();
+}
+
+renderMermaidDiagrams();
+document.addEventListener("astro:page-load", renderMermaidDiagrams);
+
+const setupSwup = () => {
+	window.swup.hooks.on("page:view", renderMermaidDiagrams);
+	window.swup.hooks.on("content:replace", resetRenderedDiagrams, { before: true });
+};
+
+if (window.swup) {
+	setupSwup();
+} else {
+	document.addEventListener("swup:enable", setupSwup, { once: true });
+}
+
+new MutationObserver((mutations) => {
+	if (mutations.some((mutation) => mutation.attributeName === "class")) {
+		rerenderMermaidDiagrams();
+	}
+}).observe(document.documentElement, { attributes: true });
+</script>

@@ -93,6 +93,49 @@
         }
     }
 
+    .mermaid-pixel-frame {
+        @apply relative my-6 mx-0 overflow-x-auto rounded-none border-2 border-[var(--primary)] bg-[var(--card-bg)] px-5 pb-5 pt-8 shadow-[6px_6px_0_var(--primary)] transition;
+        image-rendering: pixelated;
+        background-image:
+            linear-gradient(color-mix(in oklch, var(--primary) 14%, transparent) 1px, transparent 1px),
+            linear-gradient(90deg, color-mix(in oklch, var(--primary) 14%, transparent) 1px, transparent 1px);
+        background-size: 12px 12px;
+
+        &:before {
+            @apply absolute left-3 top-3 bg-[var(--card-bg)] px-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)];
+            content: "mermaid";
+            font-family: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+        }
+    }
+
+    .mermaid-pixel-frame.is-error {
+        @apply border-red-500 shadow-[6px_6px_0_rgb(239_68_68)];
+
+        &:before {
+            @apply text-red-500;
+            content: "mermaid error";
+        }
+    }
+
+    .mermaid-diagram {
+        @apply min-w-[32rem] text-center text-sm leading-6 text-[var(--tw-prose-body)];
+        font-family: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+        white-space: pre-wrap;
+    }
+
+    .mermaid-diagram svg {
+        @apply mx-auto h-auto max-w-full;
+        font-family: inherit !important;
+    }
+
+    .mermaid-diagram .node rect,
+    .mermaid-diagram .node circle,
+    .mermaid-diagram .node ellipse,
+    .mermaid-diagram .node polygon,
+    .mermaid-diagram .node path {
+        filter: drop-shadow(2px 2px 0 color-mix(in oklch, var(--primary) 35%, transparent));
+    }
+
 
     ul, ol {
         li::marker {

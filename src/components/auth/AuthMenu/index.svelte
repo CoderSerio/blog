@@ -2,7 +2,11 @@
 import Icon from "@iconify/svelte";
 import type { User } from "@supabase/supabase-js";
 import { onMount } from "svelte";
-import { initializeSupabaseAuth, supabase } from "@/lib/supabaseClient";
+import {
+	initializeSupabaseAuth,
+	isSupabaseConfigured,
+	supabase,
+} from "@/lib/supabaseClient";
 import { showToast } from "@/utils/toast";
 import { url } from "@/utils/url-utils";
 
@@ -13,6 +17,8 @@ let mounted = false;
 let root: HTMLDivElement;
 
 async function loadCurrentUser() {
+	if (!supabase) return;
+
 	await initializeSupabaseAuth();
 	const { data } = await supabase.auth.getSession();
 	user = data.session?.user ?? null;
@@ -50,6 +56,8 @@ function handleDocumentClick(event: MouseEvent) {
 }
 
 async function handleSignOut() {
+	if (!supabase) return;
+
 	loading = true;
 
 	try {
@@ -71,6 +79,12 @@ async function handleSignOut() {
 }
 
 onMount(() => {
+	if (!isSupabaseConfigured || !supabase) {
+		document.getElementById("navbar-auth-fallback")?.setAttribute("style", "display: none");
+		window.dispatchEvent(new CustomEvent("navbar-auth-ready"));
+		return;
+	}
+
 	mounted = true;
 	document.getElementById("navbar-auth-fallback")?.setAttribute("style", "display: none");
 	window.dispatchEvent(new CustomEvent("navbar-auth-ready"));

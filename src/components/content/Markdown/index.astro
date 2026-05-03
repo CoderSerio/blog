@@ -1,6 +1,7 @@
 ---
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/jetbrains-mono/wght-italic.css";
+import Mermaid from "@components/content/Mermaid/index.astro";
 
 interface Props {
 	class: string;
@@ -11,6 +12,7 @@ const className = Astro.props.class;
     <!--<div class="prose dark:prose-invert max-w-none custom-md">-->
     <!--<div class="max-w-none custom-md">-->
     <slot/>
+    <Mermaid />
 </div>
 
 <script>

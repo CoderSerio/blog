@@ -1,7 +1,7 @@
 <script lang="ts">
 import Icon from "@iconify/svelte";
 import { onMount } from "svelte";
-import { supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 import { showToast } from "@/utils/toast";
 
 let enabled = false;
@@ -17,10 +17,17 @@ function isLocalhost(hostname: string) {
 onMount(() => {
 	const params = new URLSearchParams(window.location.search);
 	enabled =
-		isLocalhost(window.location.hostname) && params.get("debug") === "1";
+		isSupabaseConfigured &&
+		isLocalhost(window.location.hostname) &&
+		params.get("debug") === "1";
 });
 
 async function handleSignOut() {
+	if (!supabase) {
+		showToast("Authentication is not configured.", "error");
+		return;
+	}
+
 	loading = true;
 
 	try {

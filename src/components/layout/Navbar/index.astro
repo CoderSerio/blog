@@ -9,6 +9,7 @@ import LightDarkSwitch from "../../theme/LightDarkSwitch/index.svelte";
 import Search from "../../search/Search/index.svelte";
 import DisplaySettings from "../../theme/DisplaySettings/index.svelte";
 import NavMenuPanel from "./NavMenuPanel/index.astro";
+import { isSupabaseConfigured } from "../../../lib/supabaseClient";
 
 const className = Astro.props.class;
 
@@ -69,11 +70,15 @@ let links: NavBarLink[] = navBarConfig.links.map(
             </button>
             <!-- client:load preserves the dropdown panel in SSR HTML; client:only made it disappear on Vite hydrate failures. -->
             <LightDarkSwitch client:load></LightDarkSwitch>
-            <a id="navbar-auth-fallback" href={url("/login/")} class="btn-plain scale-animation flex h-11 items-center rounded-lg px-4 font-bold active:scale-95">
-                Sign In
-            </a>
-            <!-- Auth also needs SSR output so cold-start hydration failures do not leave this slot empty. -->
-            <AuthMenu client:load></AuthMenu>
+            {isSupabaseConfigured && (
+                <>
+                    <a id="navbar-auth-fallback" href={url("/login/")} class="btn-plain scale-animation flex h-11 items-center rounded-lg px-4 font-bold active:scale-95">
+                        Sign In
+                    </a>
+                    <!-- Auth also needs SSR output so cold-start hydration failures do not leave this slot empty. -->
+                    <AuthMenu client:load></AuthMenu>
+                </>
+            )}
             <button aria-label="Menu" name="Nav Menu" class="btn-plain scale-animation rounded-lg w-11 h-11 active:scale-90 md:!hidden" id="nav-menu-switch">
                 <Icon name="material-symbols:menu-rounded" class="text-[1.25rem]"></Icon>
             </button>

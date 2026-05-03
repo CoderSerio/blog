@@ -3,15 +3,17 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-	throw new Error("Missing Supabase public environment variables.");
-}
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
 
 type BrowserGlobalWithSupabase = typeof globalThis & {
-	__blogSupabaseClient?: SupabaseClient;
+	__blogSupabaseClient?: SupabaseClient | null;
 };
 
 function createSupabaseBrowserClient() {
+	if (!isSupabaseConfigured) {
+		return null;
+	}
+
 	return createClient(supabaseUrl, supabaseKey, {
 		auth: {
 			autoRefreshToken: true,
@@ -38,5 +40,5 @@ export const supabase =
 		: getBrowserSupabaseClient();
 
 export async function initializeSupabaseAuth() {
-	return await supabase.auth.initialize();
+	return await supabase?.auth.initialize();
 }

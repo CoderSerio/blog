@@ -2,7 +2,11 @@
 import Icon from "@iconify/svelte";
 import type { User } from "@supabase/supabase-js";
 import { onMount } from "svelte";
-import { initializeSupabaseAuth, supabase } from "@/lib/supabaseClient";
+import {
+	initializeSupabaseAuth,
+	isSupabaseConfigured,
+	supabase,
+} from "@/lib/supabaseClient";
 import { showToast } from "@/utils/toast";
 
 let email = "";
@@ -12,6 +16,8 @@ let user: User | null = null;
 let mode: "signIn" | "signUp" = "signIn";
 
 async function loadCurrentUser() {
+	if (!supabase) return;
+
 	const { error: initializeError } = await initializeSupabaseAuth();
 	if (initializeError) {
 		showToast(initializeError.message, "error");
@@ -22,6 +28,10 @@ async function loadCurrentUser() {
 }
 
 onMount(() => {
+	if (!isSupabaseConfigured || !supabase) {
+		return;
+	}
+
 	const {
 		data: { subscription },
 	} = supabase.auth.onAuthStateChange((_event, session) => {
@@ -34,6 +44,11 @@ onMount(() => {
 });
 
 async function handleSubmit() {
+	if (!supabase) {
+		showToast("Authentication is not configured.", "error");
+		return;
+	}
+
 	if (!email || !password) {
 		showToast("Please enter your email and password.", "error");
 		return;
@@ -84,6 +99,11 @@ async function handleSubmit() {
 }
 
 async function handleGitHubSignIn() {
+	if (!supabase) {
+		showToast("Authentication is not configured.", "error");
+		return;
+	}
+
 	loading = true;
 
 	try {
@@ -107,6 +127,11 @@ async function handleGitHubSignIn() {
 }
 
 async function handleWalletSignIn(chain: "ethereum" | "solana") {
+	if (!supabase) {
+		showToast("Authentication is not configured.", "error");
+		return;
+	}
+
 	loading = true;
 
 	try {
@@ -154,6 +179,8 @@ async function handlePasswordReset() {
 }
 
 async function handleSignOut() {
+	if (!supabase) return;
+
 	loading = true;
 
 	try {
@@ -185,7 +212,12 @@ async function handleSignOut() {
         </div>
     </div>
 
-    {#if user}
+    {#if !isSupabaseConfigured}
+        <div class="rounded-2xl bg-[var(--btn-plain-bg-hover)] px-5 py-4">
+            <p class="text-sm font-medium text-75">Authentication is not configured</p>
+            <p class="mt-1 text-sm text-50">Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_PUBLISHABLE_KEY to enable sign in.</p>
+        </div>
+    {:else if user}
         <div class="rounded-2xl bg-[var(--btn-plain-bg-hover)] px-5 py-4">
             <p class="text-sm font-medium text-75">You are signed in</p>
             <p class="mt-1 break-all text-sm text-50">{user.email}</p>
