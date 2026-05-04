@@ -1,6 +1,78 @@
 <script>
 let renderId = 0;
 
+async function openMermaidPreview(diagram: HTMLElement) {
+	const svg = diagram.querySelector("svg");
+
+	if (!(svg instanceof SVGSVGElement)) {
+		return;
+	}
+
+	const { default: PhotoSwipeLightbox } = await import("photoswipe/lightbox");
+	const pswpModule = () => import("photoswipe");
+	const source = new XMLSerializer().serializeToString(svg);
+	const src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`;
+	const box = svg.viewBox.baseVal;
+	const rect = svg.getBoundingClientRect();
+	const width = Math.ceil(box?.width || rect.width || window.innerWidth);
+	const height = Math.ceil(box?.height || rect.height || window.innerHeight);
+	const lightbox = new PhotoSwipeLightbox({
+		dataSource: [
+			{
+				src,
+				w: width,
+				h: height,
+				alt: "Mermaid diagram preview",
+			},
+		],
+		pswpModule,
+		padding: { top: 20, bottom: 20, left: 20, right: 20 },
+		wheelToZoom: true,
+		arrowPrev: false,
+		arrowNext: false,
+		imageClickAction: "zoom",
+		tapAction: "zoom",
+		doubleTapAction: "zoom",
+	});
+
+	lightbox.on("close", () => lightbox.destroy());
+	lightbox.init();
+	lightbox.loadAndOpen(0);
+}
+
+function bindMermaidPreviewButton(diagram: HTMLElement) {
+	const frame = diagram.closest(".mermaid-pixel-frame");
+
+	if (!frame) {
+		return;
+	}
+
+	let button = frame.querySelector<HTMLButtonElement>(".mermaid-preview-button");
+
+	if (!button) {
+		button = document.createElement("button");
+		button.className = "mermaid-preview-button";
+		button.type = "button";
+		button.ariaLabel = "Open Mermaid diagram preview";
+		button.title = "Preview Mermaid diagram";
+		button.textContent = "⛶";
+		frame.prepend(button);
+	}
+
+	if (!button) {
+		return;
+	}
+
+	button.hidden = false;
+
+	if (button.dataset.bound === "true") {
+		return;
+	}
+
+	button.dataset.bound = "true";
+	button.addEventListener("click", () => openMermaidPreview(diagram));
+}
+
 function isDarkMode() {
 	return document.documentElement.classList.contains("dark");
 }
@@ -42,11 +114,18 @@ async function renderMermaidDiagrams() {
 				diagram.innerHTML = svg;
 				bindFunctions?.(diagram);
 				diagram.dataset.rendered = "true";
+				bindMermaidPreviewButton(diagram);
 				diagram.closest(".mermaid-pixel-frame")?.classList.remove("is-error");
 			} catch (error) {
 				console.error("Failed to render Mermaid diagram:", error);
 				diagram.textContent = source;
 				diagram.dataset.rendered = "true";
+				const button = diagram
+					.closest(".mermaid-pixel-frame")
+					?.querySelector<HTMLButtonElement>(".mermaid-preview-button");
+				if (button) {
+					button.hidden = true;
+				}
 				diagram.closest(".mermaid-pixel-frame")?.classList.add("is-error");
 			}
 		}),

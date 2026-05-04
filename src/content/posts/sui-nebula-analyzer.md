@@ -1,5 +1,5 @@
 ---
-title: "Sui TX Analyzer: A Sui Chain TX Analyzer Based on NebulaGraph"
+title: "A Sui Chain TX Analyzer Based on NebulaGraph"
 published: 2025-06-29
 updated: 2025-07-01
 description: How Sui-Nebula-Analyzer uses NebulaGraph to model on-chain wallet relationships and power relationship queries, statistics, and visualization.
