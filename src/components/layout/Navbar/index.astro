@@ -2,14 +2,14 @@
 import { Icon } from "astro-icon/components";
 import { navBarConfig, siteConfig } from "../../../config";
 import { LinkPresets } from "../../../constants/link-presets";
+import { isSupabaseConfigured } from "../../../lib/supabaseClient";
 import { LinkPreset, type NavBarLink } from "../../../types/config";
 import { url } from "../../../utils/url-utils";
 import AuthMenu from "../../auth/AuthMenu/index.svelte";
-import LightDarkSwitch from "../../theme/LightDarkSwitch/index.svelte";
 import Search from "../../search/Search/index.svelte";
 import DisplaySettings from "../../theme/DisplaySettings/index.svelte";
+import LightDarkSwitch from "../../theme/LightDarkSwitch/index.svelte";
 import NavMenuPanel from "./NavMenuPanel/index.astro";
-import { isSupabaseConfigured } from "../../../lib/supabaseClient";
 
 const className = Astro.props.class;
 

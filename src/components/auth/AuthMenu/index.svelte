@@ -80,13 +80,17 @@ async function handleSignOut() {
 
 onMount(() => {
 	if (!isSupabaseConfigured || !supabase) {
-		document.getElementById("navbar-auth-fallback")?.setAttribute("style", "display: none");
+		document
+			.getElementById("navbar-auth-fallback")
+			?.setAttribute("style", "display: none");
 		window.dispatchEvent(new CustomEvent("navbar-auth-ready"));
 		return;
 	}
 
 	mounted = true;
-	document.getElementById("navbar-auth-fallback")?.setAttribute("style", "display: none");
+	document
+		.getElementById("navbar-auth-fallback")
+		?.setAttribute("style", "display: none");
 	window.dispatchEvent(new CustomEvent("navbar-auth-ready"));
 
 	const {

@@ -18,7 +18,9 @@ let mounted = false;
 onMount(() => {
 	// Keep the SSR fallback visible until this island has hydrated, otherwise the navbar shows two theme buttons.
 	mounted = true;
-	document.getElementById("scheme-switch-fallback")?.setAttribute("style", "display: none");
+	document
+		.getElementById("scheme-switch-fallback")
+		?.setAttribute("style", "display: none");
 	// Navbar uses this event to remove the SSR fallback button only after this island is actually alive.
 	window.dispatchEvent(new CustomEvent("navbar-scheme-ready"));
 
