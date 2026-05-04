@@ -5,7 +5,7 @@ description: "What I learned from building feopack, a mini Rspack-like bundler: 
 image: ''
 tags: [Rust, Bundler, Rspack, NAPI, Webpack]
 category: Projects
-draft: true
+draft: false
 lang: en
 ---
 
