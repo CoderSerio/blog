@@ -9,7 +9,6 @@ draft: false
 lang: en
 ---
 
-> Draft note: this is an early version of the post. I will likely add more concrete code snippets, screenshots, benchmark notes, and implementation details later.
 
 ## Why did I build it?
 
