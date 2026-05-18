@@ -8,12 +8,12 @@ import {
 	supabase,
 } from "@/lib/supabaseClient";
 import { showToast } from "@/utils/toast";
-import { url } from "@/utils/url-utils";
 
 let user: User | null = null;
 let open = false;
 let loading = false;
 let mounted = false;
+let userRole: "owner" | "admin" | "editor" | "user" | null = null;
 let root: HTMLDivElement;
 
 async function loadCurrentUser() {
@@ -22,6 +22,27 @@ async function loadCurrentUser() {
 	await initializeSupabaseAuth();
 	const { data } = await supabase.auth.getSession();
 	user = data.session?.user ?? null;
+	await loadUserRole();
+}
+
+async function loadUserRole() {
+	if (!supabase || !user) {
+		userRole = null;
+		return;
+	}
+
+	const { data, error } = await supabase
+		.from("user_roles")
+		.select("role")
+		.eq("user_id", user.id)
+		.maybeSingle();
+
+	if (error) {
+		userRole = null;
+		return;
+	}
+
+	userRole = data?.role ?? "user";
 }
 
 function getUserLabel() {
@@ -67,6 +88,7 @@ async function handleSignOut() {
 
 		open = false;
 		user = null;
+		userRole = null;
 		showToast("Signed out successfully.", "success");
 	} catch (error) {
 		showToast(
@@ -75,6 +97,25 @@ async function handleSignOut() {
 		);
 	} finally {
 		loading = false;
+	}
+}
+
+function openAuthDialog() {
+	window.dispatchEvent(new CustomEvent("blog-auth-open"));
+}
+
+function getRoleLabel() {
+	switch (userRole) {
+		case "owner":
+			return "Owner";
+		case "admin":
+			return "Admin";
+		case "editor":
+			return "Editor";
+		case "user":
+			return "User";
+		default:
+			return "User";
 	}
 }
 
@@ -97,6 +138,7 @@ onMount(() => {
 		data: { subscription },
 	} = supabase.auth.onAuthStateChange((_event, session) => {
 		user = session?.user ?? null;
+		void loadUserRole();
 	});
 
 	document.addEventListener("click", handleDocumentClick);
@@ -109,7 +151,14 @@ onMount(() => {
 });
 </script>
 
-<div class="relative" bind:this={root} class:hidden={!mounted}>
+<div
+        class="relative"
+        bind:this={root}
+        class:hidden={!mounted}
+        onmouseenter={() => {
+            if (user) open = true;
+        }}
+>
     {#if user}
         <button
                 type="button"
@@ -134,6 +183,13 @@ onMount(() => {
                     <p class="mt-1 break-all text-sm font-medium text-black/75 dark:text-white/75">{getUserLabel()}</p>
                 </div>
 
+                <div class="mx-3 mb-2 flex items-center justify-between rounded-xl bg-black/[0.04] px-3 py-2 dark:bg-white/[0.06]">
+                    <span class="text-xs font-medium uppercase tracking-wider text-black/40 dark:text-white/40">Role</span>
+                    <span class="rounded-lg bg-[var(--primary)]/10 px-2 py-1 text-xs font-bold text-[var(--primary)]">
+                        {getRoleLabel()}
+                    </span>
+                </div>
+
                 <button
                         type="button"
                         class="btn-plain mt-1 h-10 w-full justify-start rounded-xl px-3 font-bold active:scale-95"
@@ -146,8 +202,12 @@ onMount(() => {
             </div>
         {/if}
     {:else}
-        <a href={url("/login/")} class="btn-plain scale-animation flex h-11 items-center rounded-lg px-4 font-bold active:scale-95">
+        <button
+                type="button"
+                class="btn-plain scale-animation flex h-11 items-center rounded-lg px-4 font-bold active:scale-95"
+                onclick={openAuthDialog}
+        >
             Sign In
-        </a>
+        </button>
     {/if}
 </div>

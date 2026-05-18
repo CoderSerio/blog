@@ -12,6 +12,7 @@ import "../styles/expressive-code.css";
 import "../styles/photoswipe.css";
 
 import DebugAuthTools from "@components/auth/DebugAuthTools/index.svelte";
+import LoginForm from "@components/auth/LoginForm/index.svelte";
 import ConfigCarrier from "@components/theme/ConfigCarrier/index.astro";
 import ToastStack from "@components/toast/ToastStack/index.svelte";
 import { profileConfig, siteConfig } from "@/config";
@@ -164,6 +165,7 @@ const bannerOffset =
 		<ConfigCarrier></ConfigCarrier>
 		<ToastStack client:only="svelte"></ToastStack>
 		<DebugAuthTools client:only="svelte"></DebugAuthTools>
+		<LoginForm client:load></LoginForm>
 		<slot />
 
 		<!-- increase the page height during page transition to prevent the scrolling animation from jumping -->

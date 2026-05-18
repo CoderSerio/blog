@@ -9,11 +9,10 @@ import {
 } from "@/lib/supabaseClient";
 import { showToast } from "@/utils/toast";
 
-let email = "";
-let password = "";
-let loading = false;
+let loadingProvider: "github" | "google" | "signOut" | null = null;
 let user: User | null = null;
-let mode: "signIn" | "signUp" = "signIn";
+let open = false;
+let dialog: HTMLDivElement;
 
 async function loadCurrentUser() {
 	if (!supabase) return;
@@ -27,6 +26,36 @@ async function loadCurrentUser() {
 	user = data.session?.user ?? null;
 }
 
+function getRedirectUrl() {
+	return `${window.location.origin}${window.location.pathname}${window.location.search}`;
+}
+
+function getProviderName(provider: "github" | "google") {
+	return provider === "github" ? "GitHub" : "Google";
+}
+
+function openModal() {
+	open = true;
+	document.body.style.overflow = "hidden";
+	setTimeout(() => dialog?.focus(), 0);
+}
+
+function closeModal() {
+	open = false;
+	loadingProvider = null;
+	document.body.style.overflow = "";
+}
+
+function handleOpenEvent() {
+	openModal();
+}
+
+function handleKeydown(event: KeyboardEvent) {
+	if (event.key === "Escape") {
+		closeModal();
+	}
+}
+
 onMount(() => {
 	if (!isSupabaseConfigured || !supabase) {
 		return;
@@ -36,152 +65,130 @@ onMount(() => {
 		data: { subscription },
 	} = supabase.auth.onAuthStateChange((_event, session) => {
 		user = session?.user ?? null;
+		if (session?.user) {
+			closeModal();
+		}
 	});
 
+	window.addEventListener("blog-auth-open", handleOpenEvent);
+	window.addEventListener("keydown", handleKeydown);
 	void loadCurrentUser();
 
-	return () => subscription.unsubscribe();
+	return () => {
+		subscription.unsubscribe();
+		window.removeEventListener("blog-auth-open", handleOpenEvent);
+		window.removeEventListener("keydown", handleKeydown);
+		document.body.style.overflow = "";
+	};
 });
 
-async function handleSubmit() {
+async function handleOAuthSignIn(provider: "github" | "google") {
 	if (!supabase) {
 		showToast("Authentication is not configured.", "error");
 		return;
 	}
 
-	if (!email || !password) {
-		showToast("Please enter your email and password.", "error");
-		return;
-	}
-
-	if (password.length < 6) {
-		showToast("Password must be at least 6 characters.", "error");
-		return;
-	}
-
-	loading = true;
+	loadingProvider = provider;
 
 	try {
-		const authRequest =
-			mode === "signIn"
-				? supabase.auth.signInWithPassword({ email, password })
-				: supabase.auth.signUp({
-						email,
-						password,
-						options: {
-							emailRedirectTo: `${window.location.origin}/login/`,
-						},
-					});
-
-		const { data, error } = await authRequest;
-
-		if (error) throw error;
-
-		user = data.user;
-		showToast(
-			mode === "signIn"
-				? "Signed in successfully."
-				: data.session
-					? "Account created and signed in."
-					: "Confirmation email sent. Please check your inbox.",
-			"success",
-		);
-	} catch (error) {
-		showToast(
-			error instanceof Error
-				? error.message
-				: "Authentication failed. Please try again later.",
-			"error",
-		);
-	} finally {
-		loading = false;
-	}
-}
-
-async function handleGitHubSignIn() {
-	if (!supabase) {
-		showToast("Authentication is not configured.", "error");
-		return;
-	}
-
-	loading = true;
-
-	try {
-		const { error } = await supabase.auth.signInWithOAuth({
-			provider: "github",
+		const { data, error } = await supabase.auth.signInWithOAuth({
+			provider,
 			options: {
-				redirectTo: `${window.location.origin}/login/`,
+				redirectTo: getRedirectUrl(),
+				skipBrowserRedirect: true,
 			},
 		});
 
 		if (error) throw error;
+
+		if (!data.url) {
+			throw new Error(`${getProviderName(provider)} sign-in is not available.`);
+		}
+
+		if (provider === "google") {
+			const response = await fetch(data.url, { redirect: "manual" });
+			if (response.status >= 400) {
+				const fallbackMessage =
+					"Google sign-in is not enabled in Supabase.";
+				try {
+					const payload = (await response.json()) as { msg?: string };
+					throw new Error(payload.msg ?? fallbackMessage);
+				} catch (error) {
+					if (error instanceof Error) {
+						throw error;
+					}
+					throw new Error(fallbackMessage);
+				}
+			}
+		}
+
+		window.location.assign(data.url);
+
+		window.setTimeout(() => {
+			loadingProvider = null;
+		}, 8000);
 	} catch (error) {
 		showToast(
 			error instanceof Error
 				? error.message
-				: "GitHub sign-in failed. Please try again later.",
+				: `${getProviderName(provider)} sign-in failed. Please try again later.`,
 			"error",
 		);
-		loading = false;
+		loadingProvider = null;
 	}
 }
 
-async function handleWalletSignIn(chain: "ethereum" | "solana") {
-	if (!supabase) {
-		showToast("Authentication is not configured.", "error");
-		return;
-	}
-
-	loading = true;
-
-	try {
-		const { data, error } =
-			chain === "ethereum"
-				? await supabase.auth.signInWithWeb3({
-						chain: "ethereum",
-						statement: `Sign in to ${window.location.host}`,
-						options: {
-							url: window.location.href,
-						},
-					})
-				: await supabase.auth.signInWithWeb3({
-						chain: "solana",
-						statement: `Sign in to ${window.location.host}`,
-						options: {
-							url: window.location.href,
-						},
-					});
-
-		if (error) throw error;
-
-		user = data.user;
-		showToast(
-			`Signed in with ${chain === "ethereum" ? "Ethereum" : "Solana"}.`,
-			"success",
-		);
-	} catch (error) {
-		showToast(
-			error instanceof Error
-				? error.message
-				: `${chain === "ethereum" ? "Ethereum" : "Solana"} wallet sign-in failed.`,
-			"error",
-		);
-	} finally {
-		loading = false;
-	}
-}
-
-async function handlePasswordReset() {
-	showToast(
-		"Password reset is currently under development. Please contact carbon1024@foxmail.com for account recovery assistance.",
-		"success",
-	);
-}
+// Web3 wallet sign-in is temporarily disabled. Keep the implementation out of
+// the active UI until wallet login is needed again.
+// async function handleWalletSignIn(chain: "ethereum" | "solana") {
+// 	if (!supabase) {
+// 		showToast("Authentication is not configured.", "error");
+// 		return;
+// 	}
+//
+// 	loading = true;
+//
+// 	try {
+// 		const { data, error } =
+// 			chain === "ethereum"
+// 				? await supabase.auth.signInWithWeb3({
+// 						chain: "ethereum",
+// 						statement: `Sign in to ${window.location.host}`,
+// 						options: {
+// 							url: window.location.href,
+// 						},
+// 					})
+// 				: await supabase.auth.signInWithWeb3({
+// 						chain: "solana",
+// 						statement: `Sign in to ${window.location.host}`,
+// 						options: {
+// 							url: window.location.href,
+// 						},
+// 					});
+//
+// 		if (error) throw error;
+//
+// 		user = data.user;
+// 		showToast(
+// 			`Signed in with ${chain === "ethereum" ? "Ethereum" : "Solana"}.`,
+// 			"success",
+// 		);
+// 	} catch (error) {
+// 		showToast(
+// 			error instanceof Error
+// 				? error.message
+// 				: `${chain === "ethereum" ? "Ethereum" : "Solana"} wallet sign-in failed.`,
+// 			"error",
+// 		);
+// 	} finally {
+// 		loading = false;
+// 	}
+// }
 
 async function handleSignOut() {
 	if (!supabase) return;
 
-	loading = true;
+	loadingProvider = "signOut";
 
 	try {
 		const { error } = await supabase.auth.signOut();
@@ -196,141 +203,100 @@ async function handleSignOut() {
 			"error",
 		);
 	} finally {
-		loading = false;
+		loadingProvider = null;
 	}
 }
 </script>
 
-<div class="card-base px-8 py-8 md:px-10 md:py-10">
-    <div class="mb-8 flex items-center gap-4">
-        <div class="meta-icon !mr-0">
-            <Icon icon="material-symbols:lock-open-outline-rounded" class="text-[1.25rem]"></Icon>
-        </div>
-        <div>
-            <h1 class="text-2xl font-bold text-90">Login</h1>
-            <p class="mt-1 text-sm text-50">Sign in with your email or GitHub account.</p>
-        </div>
-    </div>
+{#if open}
+	<div
+		class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm"
+		role="presentation"
+		onclick={(event) => {
+			if (event.target === event.currentTarget) {
+				closeModal();
+			}
+		}}
+	>
+		<div
+			class="card-base w-full max-w-[28rem] px-6 py-6 shadow-2xl shadow-black/20 outline-none md:px-8 md:py-8 dark:shadow-black/50"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="auth-dialog-title"
+			tabindex="-1"
+			bind:this={dialog}
+		>
+			<div class="mb-7 flex items-start justify-between gap-4">
+				<div class="flex items-center gap-4">
+					<div class="meta-icon !mr-0">
+						<Icon icon="material-symbols:lock-open-outline-rounded" class="text-[1.25rem]"></Icon>
+					</div>
+					<div>
+						<h1 id="auth-dialog-title" class="text-xl font-bold text-90">Sign in</h1>
+						<p class="mt-1 text-sm text-50">Continue with GitHub or Google.</p>
+					</div>
+				</div>
+				<button
+					type="button"
+					class="btn-plain h-10 w-10 shrink-0 rounded-lg active:scale-95"
+					aria-label="Close sign in dialog"
+					onclick={closeModal}
+				>
+					<Icon icon="material-symbols:close-rounded" class="text-[1.25rem]"></Icon>
+				</button>
+			</div>
 
-    {#if !isSupabaseConfigured}
-        <div class="rounded-2xl bg-[var(--btn-plain-bg-hover)] px-5 py-4">
-            <p class="text-sm font-medium text-75">Authentication is not configured</p>
-            <p class="mt-1 text-sm text-50">Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_PUBLISHABLE_KEY to enable sign in.</p>
-        </div>
-    {:else if user}
-        <div class="rounded-2xl bg-[var(--btn-plain-bg-hover)] px-5 py-4">
-            <p class="text-sm font-medium text-75">You are signed in</p>
-            <p class="mt-1 break-all text-sm text-50">{user.email}</p>
-        </div>
+			{#if !isSupabaseConfigured}
+				<div class="rounded-xl bg-[var(--btn-plain-bg-hover)] px-5 py-4">
+					<p class="text-sm font-medium text-75">Authentication is not configured</p>
+					<p class="mt-1 text-sm text-50">Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_PUBLISHABLE_KEY to enable sign in.</p>
+				</div>
+			{:else if user}
+				<div class="rounded-xl bg-[var(--btn-plain-bg-hover)] px-5 py-4">
+					<p class="text-sm font-medium text-75">You are signed in</p>
+					<p class="mt-1 break-all text-sm text-50">{user.email ?? user.id}</p>
+				</div>
 
-        <button
-                type="button"
-                class="btn-regular mt-6 h-11 w-full rounded-xl font-bold active:scale-95"
-                disabled={loading}
-                onclick={handleSignOut}
-        >
-            {loading ? "Working..." : "Sign out"}
-        </button>
-    {:else}
-        <div class="space-y-4">
-            <button
-                    type="button"
-                    class="btn-regular h-14 w-full rounded-xl font-bold active:scale-95"
-                    disabled={loading}
-                    onclick={handleGitHubSignIn}
-            >
-                <Icon icon="fa6-brands:github" class="mr-2 text-[1.1rem]"></Icon>
-                {loading ? "Working..." : "Continue with GitHub"}
-            </button>
+				<button
+					type="button"
+					class="btn-regular mt-6 h-11 w-full rounded-xl font-bold active:scale-95"
+					disabled={loadingProvider !== null}
+					onclick={handleSignOut}
+				>
+					{loadingProvider === "signOut" ? "Working..." : "Sign out"}
+				</button>
+			{:else}
+				<div class="space-y-3">
+					<button
+						type="button"
+						class="btn-regular h-12 w-full rounded-xl font-bold active:scale-95"
+						disabled={loadingProvider !== null}
+						onclick={() => void handleOAuthSignIn("github")}
+					>
+						<Icon icon="fa6-brands:github" class="mr-2 text-[1.1rem]"></Icon>
+						{loadingProvider === "github" ? "Opening GitHub..." : "Continue with GitHub"}
+					</button>
 
-            <button
-                    type="button"
-                    class="btn-regular h-14 w-full rounded-xl font-bold active:scale-95"
-                    disabled={loading}
-                    onclick={() => void handleWalletSignIn("ethereum")}
-            >
-                <Icon icon="fa6-brands:ethereum" class="mr-2 text-[1.1rem]"></Icon>
-                {loading ? "Working..." : "Continue with Ethereum"}
-            </button>
+					<button
+						type="button"
+						class="btn-regular h-12 w-full rounded-xl font-bold active:scale-95"
+						disabled={loadingProvider !== null}
+						onclick={() => void handleOAuthSignIn("google")}
+					>
+						<Icon icon="fa6-brands:google" class="mr-2 text-[1.1rem]"></Icon>
+						{loadingProvider === "google" ? "Opening Google..." : "Continue with Google"}
+					</button>
 
-            <button
-                    type="button"
-                    class="btn-regular h-14 w-full rounded-xl font-bold active:scale-95"
-                    disabled={loading}
-                    onclick={() => void handleWalletSignIn("solana")}
-            >
-                <Icon icon="material-symbols:account-balance-wallet-outline-rounded" class="mr-2 text-[1.1rem]"></Icon>
-                {loading ? "Working..." : "Continue with Solana"}
-            </button>
-        </div>
-
-        <div class="my-8 flex items-center gap-4">
-            <div class="h-px flex-1 bg-[var(--line-color)]"></div>
-            <span class="text-xs font-medium uppercase tracking-wider text-30">or</span>
-            <div class="h-px flex-1 bg-[var(--line-color)]"></div>
-        </div>
-
-        <form
-                class="space-y-5"
-                onsubmit={(event) => {
-                    event.preventDefault();
-                    void handleSubmit();
-                }}
-        >
-            <label class="block">
-                <span class="mb-2 block text-sm font-medium text-75">Email</span>
-                <input
-                        class="h-12 w-full rounded-xl bg-black/[0.04] px-4 text-sm text-75 outline-0 transition
-                        placeholder:text-black/30 focus:bg-black/[0.06]
-                        dark:bg-white/5 dark:placeholder:text-white/30 dark:focus:bg-white/10"
-                        type="email"
-                        autocomplete="email"
-                        placeholder="you@example.com"
-                        bind:value={email}
-                />
-            </label>
-
-            <label class="block">
-                <span class="mb-2 block text-sm font-medium text-75">Password</span>
-                <input
-                        class="h-12 w-full rounded-xl bg-black/[0.04] px-4 text-sm text-75 outline-0 transition
-                        placeholder:text-black/30 focus:bg-black/[0.06]
-                        dark:bg-white/5 dark:placeholder:text-white/30 dark:focus:bg-white/10"
-                        type="password"
-                        autocomplete={mode === "signIn" ? "current-password" : "new-password"}
-                        placeholder="At least 6 characters"
-                        bind:value={password}
-                />
-            </label>
-
-            <button
-                    type="submit"
-                    class="btn-regular h-12 w-full rounded-xl font-bold active:scale-95"
-                    disabled={loading}
-            >
-                {loading ? "Working..." : mode === "signIn" ? "Sign in" : "Create account"}
-            </button>
-        </form>
-
-        <div class="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
-            <button
-                    type="button"
-                    class="link text-[var(--primary)]"
-                    onclick={() => {
-                        mode = mode === "signIn" ? "signUp" : "signIn";
-                    }}
-            >
-                {mode === "signIn" ? "Need an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-
-            <button
-                    type="button"
-                    class="link text-[var(--primary)]"
-                    disabled={loading}
-                    onclick={handlePasswordReset}
-            >
-                Forgot password?
-            </button>
-        </div>
-    {/if}
-</div>
+					<!-- Web3 wallet buttons are intentionally hidden for now.
+					<button type="button" onclick={() => void handleWalletSignIn("ethereum")}>
+						Continue with Ethereum
+					</button>
+					<button type="button" onclick={() => void handleWalletSignIn("solana")}>
+						Continue with Solana
+					</button>
+					-->
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}

@@ -1,10 +1,10 @@
 ---
-import LoginForm from "@components/auth/LoginForm/index.svelte";
-import MainGridLayout from "@layouts/MainGridLayout.astro";
+import Layout from "@layouts/Layout.astro";
+import { url } from "@/utils/url-utils";
 ---
 
-<MainGridLayout title="Login" description="Login to your account">
-    <div class="mx-auto w-full max-w-[32rem]">
-        <LoginForm client:load></LoginForm>
-    </div>
-</MainGridLayout>
+<Layout title="Login" description="Login to your account">
+    <script is:inline define:vars={{homeUrl: url("/")}}>
+        window.location.replace(homeUrl);
+    </script>
+</Layout>
