@@ -3,7 +3,7 @@ title: "A Sui Chain TX Analyzer Based on NebulaGraph"
 published: 2025-06-29
 updated: 2025-07-01
 description: How Sui-Nebula-Analyzer uses NebulaGraph to model on-chain wallet relationships and power relationship queries, statistics, and visualization.
-image: "https://dev-to-uploads.s3.amazonaws.com/uploads/articles/uxjw8haye2gr4mymjukn.png"
+# image: "https://dev-to-uploads.s3.amazonaws.com/uploads/articles/uxjw8haye2gr4mymjukn.png"
 tags: [GraphQL, NebulaGraph, Web3, Blockchain]
 category: Projects
 draft: false
