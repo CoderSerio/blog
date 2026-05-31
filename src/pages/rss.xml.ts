@@ -1,5 +1,5 @@
-import rss from "@astrojs/rss";
 import type { RSSFeedItem } from "@astrojs/rss";
+import rss from "@astrojs/rss";
 import { getSortedPosts } from "@utils/content-utils";
 import { url } from "@utils/url-utils";
 import type { APIContext } from "astro";

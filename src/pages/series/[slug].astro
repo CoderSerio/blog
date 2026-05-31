@@ -1,10 +1,10 @@
 ---
-import { getAllSeries, type SeriesEntry } from "@/content/series";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { getPostsBySlugs } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getPostUrlBySlug } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
+import { getAllSeries, type SeriesEntry } from "@/content/series";
 
 export async function getStaticPaths() {
 	return getAllSeries().map((series) => ({

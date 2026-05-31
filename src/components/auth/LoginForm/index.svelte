@@ -108,8 +108,7 @@ async function handleOAuthSignIn(provider: "github" | "google") {
 		if (provider === "google") {
 			const response = await fetch(data.url, { redirect: "manual" });
 			if (response.status >= 400) {
-				const fallbackMessage =
-					"Google sign-in is not enabled in Supabase.";
+				const fallbackMessage = "Google sign-in is not enabled in Supabase.";
 				try {
 					const payload = (await response.json()) as { msg?: string };
 					throw new Error(payload.msg ?? fallbackMessage);

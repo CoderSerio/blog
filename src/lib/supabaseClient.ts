@@ -3,7 +3,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-export const isSupabaseConfigured: boolean = Boolean(supabaseUrl && supabaseKey);
+export const isSupabaseConfigured: boolean = Boolean(
+	supabaseUrl && supabaseKey,
+);
 
 type BrowserGlobalWithSupabase = typeof globalThis & {
 	__blogSupabaseClient?: SupabaseClient | null;
