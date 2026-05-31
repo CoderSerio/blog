@@ -3,7 +3,7 @@ import { getPostsBySlugs } from "@utils/content-utils";
 import { getPostUrlBySlug, getSeriesUrlBySlug } from "@utils/url-utils";
 import type { APIRoute, GetStaticPaths } from "astro";
 
-export const getStaticPaths = (() =>
+export const getStaticPaths: GetStaticPaths = (() =>
 	getAllSeries().map((series) => ({
 		params: { slug: series.slug },
 	}))) satisfies GetStaticPaths;

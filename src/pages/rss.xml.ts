@@ -1,4 +1,5 @@
 import rss from "@astrojs/rss";
+import type { RSSFeedItem } from "@astrojs/rss";
 import { getSortedPosts } from "@utils/content-utils";
 import { url } from "@utils/url-utils";
 import type { APIContext } from "astro";
@@ -16,14 +17,14 @@ function stripInvalidXmlChars(str: string): string {
 	);
 }
 
-export async function GET(context: APIContext) {
+export async function GET(context: APIContext): Promise<Response> {
 	const blog = await getSortedPosts();
 
 	return rss({
 		title: siteConfig.title,
 		description: siteConfig.subtitle || "No description",
 		site: context.site ?? "https://furrycoder.com",
-		items: blog.map((post) => {
+		items: blog.map((post): RSSFeedItem => {
 			const content =
 				typeof post.body === "string" ? post.body : String(post.body || "");
 			const cleanedContent = stripInvalidXmlChars(content);

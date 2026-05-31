@@ -10,7 +10,7 @@ export type SeriesConfig = {
 	posts: readonly string[];
 };
 
-export const series = {
+export const series: Record<string, SeriesConfig> = {
 	feopack: {
 		title: "Feopack",
 		description: "Notes from learning Rspack by building a small Rust bundler.",
@@ -22,7 +22,7 @@ export const series = {
 		],
 		posts: ["feopack", "loaders-of-rspack"],
 	},
-} as const satisfies Record<string, SeriesConfig>;
+};
 
 export type SeriesEntry = SeriesConfig & {
 	slug: string;

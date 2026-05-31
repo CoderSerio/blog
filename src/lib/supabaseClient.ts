@@ -3,13 +3,13 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
+export const isSupabaseConfigured: boolean = Boolean(supabaseUrl && supabaseKey);
 
 type BrowserGlobalWithSupabase = typeof globalThis & {
 	__blogSupabaseClient?: SupabaseClient | null;
 };
 
-function createSupabaseBrowserClient() {
+function createSupabaseBrowserClient(): SupabaseClient | null {
 	if (!isSupabaseConfigured) {
 		return null;
 	}
@@ -26,7 +26,7 @@ function createSupabaseBrowserClient() {
 
 const browserGlobal = globalThis as BrowserGlobalWithSupabase;
 
-function getBrowserSupabaseClient() {
+function getBrowserSupabaseClient(): SupabaseClient | null {
 	if (!browserGlobal.__blogSupabaseClient) {
 		browserGlobal.__blogSupabaseClient = createSupabaseBrowserClient();
 	}
@@ -34,11 +34,11 @@ function getBrowserSupabaseClient() {
 	return browserGlobal.__blogSupabaseClient;
 }
 
-export const supabase =
+export const supabase: SupabaseClient | null =
 	typeof window === "undefined"
 		? createSupabaseBrowserClient()
 		: getBrowserSupabaseClient();
 
-export async function initializeSupabaseAuth() {
+export async function initializeSupabaseAuth(): Promise<unknown> {
 	return await supabase?.auth.initialize();
 }
