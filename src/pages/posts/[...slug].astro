@@ -2,6 +2,8 @@
 import path from "node:path";
 import License from "@components/content/License/index.astro";
 import Markdown from "@components/content/Markdown/index.astro";
+import SeriesCard from "@components/content/SeriesCard/index.astro";
+import { getSeriesForPost } from "@/content/series";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
@@ -26,6 +28,7 @@ const { entry } = Astro.props;
 const { Content, headings } = await entry.render();
 
 const { remarkPluginFrontmatter } = await entry.render();
+const seriesInfo = getSeriesForPost(entry.slug);
 
 const jsonLd = {
 	"@context": "https://schema.org",
@@ -92,8 +95,11 @@ const jsonLd = {
                         tags={entry.data.tags}
                         category={entry.data.category}
                 ></PostMetadata>
-                {!entry.data.image && <div class="border-[var(--line-divider)] border-dashed border-b-[1px] mb-5"></div>}
             </div>
+
+            {seriesInfo && <SeriesCard series={seriesInfo} currentSlug={entry.slug} />}
+
+            {!entry.data.image && <div class="border-[var(--line-divider)] border-dashed border-b-[1px] mb-5 onload-animation"></div>}
 
             <!-- always show cover as long as it has one -->
 

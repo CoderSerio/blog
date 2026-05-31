@@ -132,6 +132,15 @@
         white-space: pre-wrap;
     }
 
+    .mermaid-diagram:not([data-rendered="true"]) {
+        @apply relative flex min-h-56 items-center justify-center overflow-hidden;
+    }
+
+    .mermaid-diagram:not([data-rendered="true"])::before {
+        @apply block h-16 w-2/3 max-w-96 animate-pulse rounded-lg bg-black/5 dark:bg-white/10;
+        content: "";
+    }
+
     .mermaid-diagram svg {
         @apply mx-auto h-auto max-w-full;
         font-family: inherit !important;

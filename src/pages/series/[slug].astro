@@ -1,0 +1,73 @@
+---
+import { getAllSeries, type SeriesEntry } from "@/content/series";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getPostsBySlugs } from "@utils/content-utils";
+import { formatDateToYYYYMMDD } from "@utils/date-utils";
+import { getPostUrlBySlug } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
+
+export async function getStaticPaths() {
+	return getAllSeries().map((series) => ({
+		params: { slug: series.slug },
+		props: { series },
+	}));
+}
+
+const { series } = Astro.props as { series: SeriesEntry };
+const posts = await getPostsBySlugs(series.posts);
+---
+
+<MainGridLayout title={series.title} description={series.description}>
+    <section class="card-base mb-4 px-6 py-6 md:px-9 md:py-7">
+        <div class="relative">
+            <div class="mb-2 text-sm font-semibold text-[var(--primary)]">Series</div>
+            <h1 class="m-0 text-3xl font-bold text-90 md:text-[2.25rem]/[2.75rem]">
+                {series.title}
+            </h1>
+            {series.description && <p class="mb-0 mt-3 max-w-3xl text-75">{series.description}</p>}
+            {series.links && series.links.length > 0 && (
+                <div class="mt-5 flex flex-wrap gap-2">
+                    {series.links.map((link) => (
+                        <a
+                                href={link.href}
+                                target="_blank"
+                                rel="noopener"
+                                class="btn-regular h-9 rounded-xl px-3 text-sm font-semibold"
+                        >
+                            <Icon name="fa6-brands:github" class="mr-1.5 text-base"></Icon>
+                            {link.label}
+                        </a>
+                    ))}
+                </div>
+            )}
+        </div>
+    </section>
+
+    <section class="card-base mb-4 px-4 py-4 md:px-6 md:py-5">
+        <ol class="m-0 flex list-none flex-col gap-2 p-0">
+            {posts.map((post, index) => (
+                <li>
+                    <a
+                            href={getPostUrlBySlug(post.slug)}
+                            class="group flex gap-4 rounded-xl px-3 py-3 transition hover:bg-black/5 dark:hover:bg-white/10"
+                    >
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--btn-regular-bg)] text-sm font-bold text-[var(--btn-content)]">
+                            {index + 1}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="mb-1 flex flex-wrap items-center gap-2">
+                                <h2 class="m-0 truncate text-xl font-bold text-90 group-hover:text-[var(--primary)]">
+                                    {post.data.title}
+                                </h2>
+                                {post.data.draft && <span class="rounded-md bg-black/5 px-2 py-0.5 text-xs text-50 dark:bg-white/10">draft</span>}
+                            </div>
+                            <div class="mb-2 text-sm text-50">{formatDateToYYYYMMDD(post.data.published)}</div>
+                            {post.data.description && <p class="m-0 line-clamp-2 text-sm text-75">{post.data.description}</p>}
+                        </div>
+                        <Icon name="material-symbols:chevron-right-rounded" class="my-auto hidden text-3xl text-[var(--primary)] md:block"></Icon>
+                    </a>
+                </li>
+            ))}
+        </ol>
+    </section>
+</MainGridLayout>

@@ -1,7 +1,7 @@
 ---
-title: "feopack: A Mini Rust Bundler, and What I Learned"
+title: "Feopack: Mini Rspack"
 published: 2026-05-03
-description: "What I learned from building feopack, a mini Rspack-like bundler: the technical pieces, the architecture, and a few thoughts from building software in the agent era."
+description: "What I learned from building Feopack, a mini Rspack-like bundler: the technical pieces, the architecture, and a few thoughts from building software in the agent era."
 image: ''
 tags: [Rust, Bundler, Rspack, NAPI, Webpack]
 category: Projects
@@ -12,7 +12,7 @@ lang: en
 
 ## Why did I build it?
 
-feopack started as a learning project.
+Feopack started as a learning project.
 
 Not because the JavaScript ecosystem needed another production bundler. It definitely did not wake up one morning asking for my tiny Rust experiment. I built it because I wanted to understand what modern bundlers like Rspack are doing under the surface.
 
@@ -114,7 +114,7 @@ But a friendly JavaScript API alone is not enough. It still needs a bridge into 
 
 Luckily, `napi-rs` does most of the heavy lifting needed to build that bridge.
 
-The TypeScript wrapper only needs to lazily create a native `Rspack` instance from `@feopack/binding`. On the Rust side, that native class receives `RawOptions`, converts them into internal compilation options, and exposes an async `build()` method.
+The TypeScript wrapper only needs to lazily create a native compiler instance from `@feopack/binding`. On the Rust side, that native class receives `RawOptions`, converts them into internal compilation options, and exposes an async `build()` method.
 
 In the bigger Rspack-shaped picture, this is the highlighted `Configuration & Binding` slice: the place where user-facing configuration turns into something the native compiler can actually work with.
 
@@ -452,13 +452,12 @@ The bundler was still not “smart,” but the representation had moved from sou
 
 The last transformation in this part is where a chunk becomes an output asset.
 
-The important detail is that a `Chunk` does not contain generated JavaScript yet. In this version, it only contains `module_ids`: the list of modules that should be rendered together. Code generation then walks those IDs, loads the corresponding module source, rewrites its import/export syntax, and stores the result as a temporary `CodegenModule`:
+The important detail is that a `Chunk` does not contain generated JavaScript yet. In this version, it only contains `module_ids`: the list of modules that should be rendered together. Code generation then walks those IDs, consumes the module source cached during `make()`, rewrites its import/export syntax, and stores the result as a temporary `CodegenModule`:
 
 ```rust
 struct CodegenModule {
   id: String,
   source: String,
-  imports: Vec<ResolvedImportRecord>,
 }
 ```
 
@@ -498,7 +497,7 @@ The important part is that `render_chunk()` turns a list of `CodegenModule`s int
 
 ```js
 const __feopack_modules__ = {
-  "entry.js": (__feopack_module__, __feopack_import__) => {
+  "entry.js": (__feopack_module__, __feopack_exports__, __feopack_import__) => {
     // transformed module code
   },
 };
@@ -512,7 +511,11 @@ function __feopack_import__(id) {
 
   const __feopack_module__ = { exports: {} };
   __feopack_cache__[id] = __feopack_module__;
-  __feopack_modules__[id](__feopack_module__, __feopack_import__);
+  __feopack_modules__[id](
+    __feopack_module__,
+    __feopack_module__.exports,
+    __feopack_import__,
+  );
   return __feopack_module__.exports;
 }
 ```
@@ -527,7 +530,7 @@ Once imports and exports enter the picture, a bundle is not just concatenated Ja
 >
 > So I started moving it toward an ESM-style runtime model, which fits modern module semantics better.
 
-One rough edge remains in this implementation: it creates a fresh `SwcCompiler` inside chunk processing. That is not the most elegant architecture. A more mature version would think harder about compiler ownership, shared state, and concurrency boundaries. 
+One rough edge remains in this implementation: it still creates fresh `SwcCompiler` instances in a few places. That is not the most elegant architecture. A more mature version would think harder about compiler ownership, shared source maps, and concurrency boundaries. 
 
 But for a small bundler, this tradeoff kept the pipeline explicit enough to reason about.
 
@@ -595,7 +598,7 @@ flowchart LR
 
 This complete path is the part feopack currently implements: configuration enters from JavaScript, Rust builds a `Compilation`, `make()` constructs the module graph, `seal()` groups modules into a chunk and generates an in-memory `GeneratedAsset`, and `emit_assets()` writes it to disk.
 
-Of course, this is still far from a real bundler. The obvious missing pieces are a plugin system, a loader pipeline, CSS and asset modules, HMR, source maps, tree shaking, advanced chunk splitting, and much more complete ESM compatibility. If I continue working on feopack, these are probably the directions I will pick up one by one.
+Of course, this is still far from a real bundler. The obvious missing pieces are a plugin system, a more complete loader pipeline, CSS and asset modules, HMR, source maps, tree shaking, advanced chunk splitting, and much more complete ESM compatibility. If I continue working on feopack, these are probably the directions I will pick up one by one.
 
 ## 11. Why This Still Matters in the Agent Era
 

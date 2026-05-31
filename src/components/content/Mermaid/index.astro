@@ -1,5 +1,9 @@
 <script>
 let renderId = 0;
+let mermaidPromise: Promise<any> | null = null;
+let mermaidObserver: IntersectionObserver | null = null;
+
+const mermaidRootMargin = "720px 0px";
 
 async function openMermaidPreview(diagram: HTMLElement) {
 	const svg = diagram.querySelector("svg");
@@ -77,22 +81,18 @@ function isDarkMode() {
 	return document.documentElement.classList.contains("dark");
 }
 
-async function renderMermaidDiagrams() {
-	const diagrams = Array.from(
-		document.querySelectorAll<HTMLElement>(".mermaid-diagram"),
-	).filter((diagram) => diagram.dataset.rendered !== "true");
+async function getMermaid() {
+	mermaidPromise ??= import("mermaid").then((module) => module.default);
+	return mermaidPromise;
+}
 
-	if (diagrams.length === 0) {
-		return;
-	}
-
-	const { default: mermaid } = await import("mermaid");
+function initializeMermaid(mermaid: any) {
 	mermaid.initialize({
 		startOnLoad: false,
 		securityLevel: "strict",
 		look: "handDrawn",
 		theme: isDarkMode() ? "dark" : "base",
-			themeVariables: {
+		themeVariables: {
 			fontFamily:
 				"'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
 			primaryColor: isDarkMode() ? "#1f2937" : "#f8fafc",
@@ -103,51 +103,119 @@ async function renderMermaidDiagrams() {
 			tertiaryColor: isDarkMode() ? "#0f172a" : "#eef2ff",
 		},
 	});
+}
 
-	await Promise.all(
-		diagrams.map(async (diagram) => {
-			const source = decodeURIComponent(diagram.dataset.mermaid ?? "");
-			const id = `mermaid-${Date.now()}-${renderId++}`;
+async function renderMermaidDiagram(diagram: HTMLElement) {
+	if (
+		diagram.dataset.rendered === "true" ||
+		diagram.dataset.rendering === "true"
+	) {
+		return;
+	}
 
-			try {
-				const { svg, bindFunctions } = await mermaid.render(id, source);
-				diagram.innerHTML = svg;
-				bindFunctions?.(diagram);
-				diagram.dataset.rendered = "true";
-				bindMermaidPreviewButton(diagram);
-				diagram.closest(".mermaid-pixel-frame")?.classList.remove("is-error");
-			} catch (error) {
-				console.error("Failed to render Mermaid diagram:", error);
-				diagram.textContent = source;
-				diagram.dataset.rendered = "true";
-				const button = diagram
-					.closest(".mermaid-pixel-frame")
-					?.querySelector<HTMLButtonElement>(".mermaid-preview-button");
-				if (button) {
-					button.hidden = true;
-				}
-				diagram.closest(".mermaid-pixel-frame")?.classList.add("is-error");
-			}
-		}),
+	diagram.dataset.rendering = "true";
+
+	const source = decodeURIComponent(diagram.dataset.mermaid ?? "");
+	const id = `mermaid-${Date.now()}-${renderId++}`;
+
+	try {
+		const mermaid = await getMermaid();
+		initializeMermaid(mermaid);
+		const { svg, bindFunctions } = await mermaid.render(id, source);
+		diagram.innerHTML = svg;
+		bindFunctions?.(diagram);
+		diagram.dataset.rendered = "true";
+		bindMermaidPreviewButton(diagram);
+		diagram.closest(".mermaid-pixel-frame")?.classList.remove("is-error");
+	} catch (error) {
+		console.error("Failed to render Mermaid diagram:", error);
+		diagram.textContent = source;
+		diagram.dataset.rendered = "true";
+		const button = diagram
+			.closest(".mermaid-pixel-frame")
+			?.querySelector<HTMLButtonElement>(".mermaid-preview-button");
+		if (button) {
+			button.hidden = true;
+		}
+		diagram.closest(".mermaid-pixel-frame")?.classList.add("is-error");
+	} finally {
+		diagram.dataset.rendering = "false";
+	}
+}
+
+function getMermaidDiagrams() {
+	return Array.from(
+		document.querySelectorAll<HTMLElement>(".mermaid-diagram"),
 	);
 }
 
+function observeMermaidDiagrams() {
+	const diagrams = getMermaidDiagrams().filter(
+		(diagram) =>
+			diagram.dataset.rendered !== "true" &&
+			diagram.dataset.observed !== "true",
+	);
+
+	if (diagrams.length === 0) {
+		return;
+	}
+
+	if (!("IntersectionObserver" in window)) {
+		diagrams.forEach((diagram) => renderMermaidDiagram(diagram));
+		return;
+	}
+
+	mermaidObserver ??= new IntersectionObserver(
+		(entries) => {
+			entries.forEach((entry) => {
+				if (!entry.isIntersecting) {
+					return;
+				}
+
+				const diagram = entry.target as HTMLElement;
+				mermaidObserver?.unobserve(diagram);
+				diagram.dataset.observed = "false";
+				renderMermaidDiagram(diagram);
+			});
+		},
+		{ rootMargin: mermaidRootMargin },
+	);
+
+	diagrams.forEach((diagram) => {
+		diagram.dataset.observed = "true";
+		mermaidObserver?.observe(diagram);
+	});
+}
+
 function resetRenderedDiagrams() {
-	document.querySelectorAll<HTMLElement>(".mermaid-diagram").forEach((diagram) => {
+	getMermaidDiagrams().forEach((diagram) => {
+		mermaidObserver?.unobserve(diagram);
+		diagram.innerHTML = "";
 		diagram.dataset.rendered = "false";
+		diagram.dataset.rendering = "false";
+		diagram.dataset.observed = "false";
 	});
 }
 
 function rerenderMermaidDiagrams() {
 	resetRenderedDiagrams();
-	renderMermaidDiagrams();
+	observeMermaidDiagrams();
 }
 
-renderMermaidDiagrams();
-document.addEventListener("astro:page-load", renderMermaidDiagrams);
+function scheduleMermaidDiagrams() {
+	if ("requestIdleCallback" in window) {
+		window.requestIdleCallback(() => observeMermaidDiagrams(), { timeout: 500 });
+		return;
+	}
+
+	setTimeout(observeMermaidDiagrams, 0);
+}
+
+scheduleMermaidDiagrams();
+document.addEventListener("astro:page-load", scheduleMermaidDiagrams);
 
 const setupSwup = () => {
-	window.swup.hooks.on("page:view", renderMermaidDiagrams);
+	window.swup.hooks.on("page:view", scheduleMermaidDiagrams);
 	window.swup.hooks.on("content:replace", resetRenderedDiagrams, { before: true });
 };
 

@@ -1,10 +1,11 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import { getSeriesForPost } from "@/content/series";
 import path from "node:path";
 import { Icon } from "astro-icon/components";
 import I18nKey from "../../../i18n/i18nKey";
 import { i18n } from "../../../i18n/translation";
-import { getDir } from "../../../utils/url-utils";
+import { getDir, getSeriesUrlBySlug } from "../../../utils/url-utils";
 import ImageWrapper from "../../media/ImageWrapper/index.astro";
 import PostMetadata from "../PostMeta/index.astro";
 
@@ -41,6 +42,7 @@ const hasCover = image !== undefined && image !== null && image !== "";
 const coverWidth = "28%";
 
 const { remarkPluginFrontmatter } = await entry.render();
+const seriesInfo = getSeriesForPost(entry.slug);
 ---
 <div class:list={["card-base flex flex-col-reverse md:flex-col w-full rounded-[var(--radius-large)] overflow-hidden relative", className]} style={style}>
     <div class:list={["pl-6 md:pl-9 pr-6 md:pr-2 pt-6 md:pt-7 pb-6 relative", {"w-full md:w-[calc(100%_-_52px_-_12px)]": !hasCover, "w-full md:w-[calc(100%_-_var(--coverWidth)_-_12px)]": hasCover}]}>
@@ -58,6 +60,17 @@ const { remarkPluginFrontmatter } = await entry.render();
 
         <!-- metadata -->
         <PostMetadata published={published} updated={updated} tags={tags} category={category} hideTagsForMobile={true} hideUpdateDate={true} class="mb-4"></PostMetadata>
+
+        {seriesInfo && (
+            <a
+                    href={getSeriesUrlBySlug(seriesInfo.slug)}
+                    class="link-lg mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--primary)]"
+                    aria-label={`View the ${seriesInfo.title} series`}
+            >
+                <Icon name="material-symbols:collections-bookmark-outline-rounded" class="text-lg"></Icon>
+                <span>{seriesInfo.title}</span>
+            </a>
+        )}
 
         <!-- description -->
         <div class:list={["transition text-75 mb-3.5 pr-4", {"line-clamp-2 md:line-clamp-1": !description}]}>

@@ -1,0 +1,21 @@
+---
+import type { PostSeriesEntry } from "@/content/series";
+import SeriesDirectory from "./SeriesDirectory.svelte";
+import { getSeriesDataUrlBySlug, getSeriesUrlBySlug } from "@utils/url-utils";
+
+interface Props {
+	series: PostSeriesEntry;
+	currentSlug: string;
+}
+
+const { series, currentSlug } = Astro.props;
+---
+
+<SeriesDirectory
+	client:idle
+	title={series.title}
+	description={series.description}
+	currentSlug={currentSlug}
+	seriesUrl={getSeriesUrlBySlug(series.slug)}
+	dataUrl={getSeriesDataUrlBySlug(series.slug)}
+/>

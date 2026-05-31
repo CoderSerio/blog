@@ -16,6 +16,14 @@ export function getPostUrlBySlug(slug: string): string {
 	return url(`/posts/${slug}/`);
 }
 
+export function getSeriesUrlBySlug(slug: string): string {
+	return url(`/series/${slug}/`);
+}
+
+export function getSeriesDataUrlBySlug(slug: string): string {
+	return url(`/api/series/${slug}.json/`);
+}
+
 export function getTagUrl(tag: string): string {
 	if (!tag) return url("/archive/");
 	return url(`/archive/?tag=${encodeURIComponent(tag.trim())}`);

@@ -1,7 +1,7 @@
 ---
 title: "Feopack: Loaders"
 published: 2026-05-19
-description: "A working research note for extending feopack with a more complete loader pipeline"
+description: "A working research note for extending Feopack with a more complete loader pipeline"
 image: ''
 tags: [Rust, Bundler, Rspack, Webpack, Plugin]
 category: Projects
