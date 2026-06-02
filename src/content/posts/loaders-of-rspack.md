@@ -11,26 +11,25 @@ lang: en
 
 ## Why am I doing it?
 
-This week, I plan to spend some focused time building Feopack's loader system.
+Sevral weeks ago, I planed to spend some focused time building Feopack's loader system.
 
-> BTW, why am I suddenly working on feopack again?
+> BTW, why was I suddenly working on feopack again?
 > Maybe some people were too harsh about how rarely I update my blog.
 > Well, let me try to do it better than annually :D
 
-Before jumping into the deep end of loaders, I want to learn from a better design first, and Rspack is the good reference. Otherwise my own design might end up being too wild and crazy to be accepted by the industry.
+Before jumping into the deep end of loaders, I wanted to learn from a better design first, and Rspack is the good reference, and actually Feopack is the simplified version of that. Otherwise my own design might end up being too wild and crazy to be accepted by the industry.
 
-Feopack already has the rough build lifecycle: `make`, `seal`, and `emit`. That is enough to explain the skeleton of a bundler, but that's not cool enough.
+In my past blog, Feopack already had the rough build lifecycle: `make`, `seal`, and `emit`. That is enough to explain the skeleton of a bundler, but that's not cool enough.
 
 The next missing piece is not a more clever chunk algorithm yet. It is the ability to take a file that is not plain JavaScript, run it through a small transformation pipeline, and let the rest of the compiler treat the result as a normal module.
 
-That is the loader story.
+That is what loader expected to do. 
 
-## A short map for this post
+Here is the story line I plan to write, and I will tell my understanding about loaders in the order:
 
-> Drawing on what I learned while writing the last Feopack post, I think listing all section titles up from makes it easier for readers to follow the thread.
+> It could change because it's just a draf at yet
 
-Here is the rough shape I want this note to follow:
-
+```
 1. Why loader should come before a plugin system in Feopack.
 2. Where loader execution belongs in the build pipeline.
 3. What Rspack roughly does, without trying to copy every historical detail.
@@ -38,8 +37,80 @@ Here is the rough shape I want this note to follow:
 5. How a text loader can prove the pipeline works.
 6. Why `pitch`, resource queries, and virtual modules exist.
 7. What I should deliberately not build yet.
+```
 
-Some of these sections are still notes rather than finished explanations. That is fine. This post is a working journal, not a stone tablet delivered from the mountain of perfect abstractions.
+## So, what do loaders do?
+
+In the `make -> seal -> emit` lifecycle, loaders belong to `make`.
+
+More precisely, they sit inside the module build step. The compiler resolves a request, reads the resource, applies matching loaders, and only then parses the transformed source as a module.
+
+```mermaid
+flowchart LR
+  Entry["【Entry】<br/>src/index.js"]
+
+  subgraph MAKE["Make"]
+    direction TB
+    Resolve["【Resolve Request】<br/>./message.txt"]
+    Read["【Read Resource】<br/>raw source"]
+    Loaders["【Run Loaders】<br/>source -> JS module"]
+    Parse["【Parse Module】<br/>AST + dependencies"]
+    ModuleGraph["【ModuleGraph】<br/>modules + dependency edges"]
+
+    Resolve --> Read
+    Read --> Loaders
+    Loaders --> Parse
+    Parse --> ModuleGraph
+  end
+
+
+  Entry --> Resolve
+
+  style Loaders fill:#eef2ff,stroke:#8b5cf6,stroke-width:2px,color:#1f2937
+```
+
+So a loader is not a late code generation trick. It is part of building a module.
+
+For example, suppose we have a text file that starts as raw text:
+
+```txt
+hello loader
+```
+
+As we all know, importing a `.txt` file directly in JavaScript does not work.
+But with a loader, we can make it possible:
+
+```js
+import txt from './hello.txt'
+
+console.log(txt) // "hello loader"
+```
+
+And the idea is pretty simple. Since the whole process runs inside Rust or Node.js, the compiler can read the `.txt` file, get its content, and transform that content into JavaScript source code.
+
+```rs
+// context = readFile('./hello.txt')
+pub fn text_loader(context: LoaderContext) -> Result<String, String> {
+  Ok(format!("export default {:?}", context.source))
+}
+```
+
+The loader turns the text file into a JavaScript module. You can think of that generated module as a virtual file whose content looks like this:
+
+```js
+export default 'hello loader'
+```
+
+So finally, JavaScript can import and consume it like a real module file.
+
+
+> Actually, this is not exactly how my current implementation transforms the code.
+> I first tried to do it through SWC, but SWC does not give me a convenient helper for this specific rewrite.
+> And yes, I am lazy, so I changed the loader implementation itself instead.
+> That is not a big deal though. The text above still explains the mechanism well.
+
+
+todo!()
 
 ## Why loader before plugins?
 
@@ -107,7 +178,7 @@ request
   -> NormalModuleFactory
   -> resolve resource
   -> match module rules
-  -> run loaders
+  -> 🌟 run loaders
   -> build module
   -> parse dependencies
   -> ModuleGraph
