@@ -11,7 +11,7 @@ lang: en
 
 ## Why am I doing it?
 
-Sevral weeks ago, I planed to spend some focused time building Feopack's loader system.
+Several weeks ago, I planed to spend some focused time building Feopack's loader system.
 
 > BTW, why was I suddenly working on feopack again?
 > Maybe some people were too harsh about how rarely I update my blog.
@@ -39,11 +39,13 @@ Here is the story line I plan to write, and I will tell my understanding about l
 7. What I should deliberately not build yet.
 ```
 
-## So, what do loaders do?
+## About loaders, all you need to know.
+
+### So, what are loaders?
 
 In the `make -> seal -> emit` lifecycle, loaders belong to `make`.
 
-More precisely, they sit inside the module build step. The compiler resolves a request, reads the resource, applies matching loaders, and only then parses the transformed source as a module.
+They sit inside the module build step. The compiler resolves a request, reads the resource, applies matching loaders, and only then parses the transformed source as a module.
 
 ```mermaid
 flowchart LR
@@ -71,13 +73,20 @@ flowchart LR
 
 So a loader is not a late code generation trick. It is part of building a module.
 
-For example, suppose we have a text file that starts as raw text:
+Loaders run when the compiler resolves a `module request`.
+
+> What the module request is?
+> Generally, it comes from the `import`(or `request`, the below are the same so) in entry files.
+> When we start to resolve a `import`, it generates a `module request`. 
+> And in some conditions, loaders can make a `import` several ones, which will get talked over in below part. 
+
+To make that concrete, suppose we have a text file that starts as raw text:
 
 ```txt
 hello loader
 ```
 
-As we all know, importing a `.txt` file directly in JavaScript does not work.
+Out of the box, importing a `.txt` file directly in JavaScript does not work.
 But with a loader, we can make it possible:
 
 ```js
@@ -86,9 +95,14 @@ import txt from './hello.txt'
 console.log(txt) // "hello loader"
 ```
 
-And the idea is pretty simple. Since the whole process runs inside Rust or Node.js, the compiler can read the `.txt` file, get its content, and transform that content into JavaScript source code.
+The idea itself is simple. Since the whole process runs inside Rust or Node.js, the compiler can read the `.txt` file, get its content, and transform that content into JavaScript source code.
 
 ```rs
+pub struct LoaderRule {
+  pub test: String,
+  pub used_loaders: Vec<String>,
+}
+
 // context = readFile('./hello.txt')
 pub fn text_loader(context: LoaderContext) -> Result<String, String> {
   Ok(format!("export default {:?}", context.source))
@@ -109,113 +123,91 @@ So finally, JavaScript can import and consume it like a real module file.
 > And yes, I am lazy, so I changed the loader implementation itself instead.
 > That is not a big deal though. The text above still explains the mechanism well.
 
+### How do we register a loader?
 
-todo!()
+In Rspack (and Webpack, which keeps the same config shape), we register loaders through `module.rules`. A minimal case for the `.txt` demo above looks like this:
 
-## Why loader before plugins?
+```ts
+// webpack.config.ts
+import type { Configuration } from 'webpack'
 
-At first, plugin systems sound more important.
-
-Webpack has hooks everywhere. Rspack also needs hook compatibility because a large part of the ecosystem expects to extend the compiler through plugins. If I want to learn Rspack, it is very tempting to jump directly into hooks, lifecycle taps, and plugin registration.
-
-But for Feopack, loader is the better next step.
-
-A loader has a very concrete job:
-
-```txt
-resource path + source code -> transformed source code
+export default {
+  entry: './src/index.js',
+  module: {
+    rules: [
+      {
+        // When the request ends with .txt, run the loader chain.
+        test: /\.txt$/i,
+        use: [
+          {
+            // Resolve a custom loader from disk.
+            loader: './loaders/text-loader.js',
+          },
+        ],
+      },
+    ],
+  },
+} 
 ```
 
-That makes it easier to test. If I import a `.txt` file, I should be able to transform that text into a JavaScript module. If I import a `.css` file later, I can decide whether it becomes injected style code, extracted asset content, or something else. The important part is that the compiler can keep walking the module graph after the transformation.
+The same idea also works with the shorthand array form you often see in docs:
 
-Plugin is wider. It can touch compiler options, compilation state, module creation, asset generation, optimization, emitting, and probably several other places where future me will ask present me why I left so many trapdoors open.
-
-So the order is simple: loader first, plugin later.
-
-Loader teaches one module how to become another module. Plugin teaches the whole compiler how to be interrupted.
-
-## Where should loaders run?
-
-The cleanest place is inside `make`, during module building.
-
-The rough order should be:
-
-```txt
-resolve request
-read resource from disk
-run matching loaders
-parse transformed source
-collect dependencies
-add module to module graph
-enqueue discovered dependencies
+```ts
+module: {
+  rules: [
+    {
+      test: /\.txt$/i,
+      use: ['./loaders/text-loader.js'],
+    },
+  ],
+},
 ```
 
-The key detail is that dependency collection must see the transformed source, not the raw file content.
+Rspack's implementation is much more layered than Feopack needs to be right now. At this early stage, I chose to start with built-in loaders, which live in the Rust part instead of a `module.rules` table on the JavaScript side.
 
-If `message.txt` is imported from JavaScript, the parser should not try to parse raw text as JavaScript. The text loader should turn it into something like this first:
+In Feopack, the loaders are registered when a new compilation starts:
 
-```js
-const __feopack_text__ = "hello from text";
-export default __feopack_text__;
+```rs
+impl Compilation {
+  pub fn new(options: CompilationOptions) -> Self {
+    let mut loader_registry = LoaderRegistry::new();
+    // give a name to the loader, and then we can use the name as a symbol of it
+    loader_registry.register_loader("my-honey-text-loader".to_string(), text_loader);
+    loader_registry.add_rule(LoaderRule {
+      test: ".txt".to_string(),
+      // the name gets used here :D
+      used_loaders: vec!["my-honey-text-loader".to_string()],
+    });
+  }
+
+  // ...
+}
 ```
 
-Then Feopack can parse the generated JavaScript like any other module.
+### When do loaders run?
 
-This also explains why running loaders again during code generation would feel wrong. Code generation should consume the module data produced during `make`. It can render the transformed module into the final bundle, but it should not rediscover the original resource and transform it a second time.
+When `src/index.js` contains `import txt from './hello.txt'`, the compiler does not parse the raw text file as JavaScript. It matches this rule, runs `text-loader`, and only then feeds the loader output to the parser.
 
-In a more mature implementation, this intermediate result should live on the module itself, not as a random temporary field floating around the compilation. A module is not just a file path. It is the compiler's memory of that file after resolution, loading, transformation, and dependency analysis.
+> You can see that in the mermaid diagram above.
 
-## So, what does Rspack do?
 
-Rspack's implementation is much more layered than Feopack needs to be right now, but the broad idea is still readable.
+## Building a better Loader System
 
-The compiler does not simply read a file and parse it directly. A request goes through module factory logic, gets resolved into a resource, finds matching rules, runs loaders, and only then becomes a module that can be parsed and added to the graph.
+> Virtual Request
+> Pitcher
 
-In a very simplified shape:
+### Virtual request
 
-```txt
-request
-  -> NormalModuleFactory
-  -> resolve resource
-  -> match module rules
-  -> 🌟 run loaders
-  -> build module
-  -> parse dependencies
-  -> ModuleGraph
-```
-
-This is the part I want Feopack to learn from Rspack:
-
-1. Loader execution belongs to module building.
-2. Loader output becomes the module source that the parser sees.
-3. The module should remember enough build result data for later phases.
-4. The pipeline should stay extensible without making the MVP unreadable.
-
-And this is the part I do not want Feopack to copy yet:
-
-1. Full webpack-compatible rule syntax.
-2. Inline loader request syntax like `style-loader!css-loader!./a.css`.
-3. Complete loader context APIs.
-4. Cache invalidation.
-5. Source map chaining.
-6. Pitch loader behavior.
-
-Those are real problems, just not today's problems.
-
-## The minimal Feopack loader runner
-
-For now, I want the loader system to have three small concepts.
-
-First, a rule:
+First, define a rule structure:
 
 ```rust
 pub struct LoaderRule {
   pub test: String,
-  pub use_loaders: Vec<String>,
+  pub used_loaders: Vec<String>,
 }
 ```
 
-Second, a loader registry:
+Second, define a loader registry:
 
 ```rust
 pub type Loader = fn(resource_path: &Path, source: String) -> Result<String, String>;
