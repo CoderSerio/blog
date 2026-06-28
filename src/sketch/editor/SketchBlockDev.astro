@@ -1,0 +1,5 @@
+---
+import SketchBlockDevClient from "./SketchBlockDev.svelte";
+---
+
+{import.meta.env.DEV && <SketchBlockDevClient client:only="svelte" />}

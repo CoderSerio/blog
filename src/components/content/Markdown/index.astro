@@ -2,6 +2,7 @@
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/jetbrains-mono/wght-italic.css";
 import Mermaid from "@components/content/Mermaid/index.astro";
+import SketchBlockDev from "@/sketch/editor/SketchBlockDev.astro";
 
 interface Props {
 	class: string;
@@ -13,6 +14,7 @@ const className = Astro.props.class;
     <!--<div class="max-w-none custom-md">-->
     <slot/>
     <Mermaid />
+    <SketchBlockDev />
 </div>
 
 <script>
