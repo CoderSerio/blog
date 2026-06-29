@@ -46,6 +46,10 @@ function renderStroke(element: SketchStrokeElement): string {
 		return "";
 	}
 
+	if (element.type === "erase") {
+		return `<path d="${path}" fill="none" stroke="#000000" stroke-width="${element.size ?? 24}" stroke-linecap="round" stroke-linejoin="round" />`;
+	}
+
 	return `<path d="${path}" fill="none" ${lineAttributes(element)} />`;
 }
 
@@ -95,6 +99,7 @@ function renderElement(element: SketchElement): string {
 	switch (element.type) {
 		case "stroke":
 		case "highlight":
+		case "erase":
 			return renderStroke(element);
 		case "line":
 		case "arrow":
@@ -112,6 +117,19 @@ export function renderSketchToSvg(document: SketchDocument): string {
 		document.background && document.background !== "transparent"
 			? `<rect width="100%" height="100%" fill="${escapeXml(document.background)}" />`
 			: "";
+	const maskId = "sketch-visible-mask";
+	const visibleElements = document.elements
+		.filter((element) => element.type !== "erase")
+		.map(renderElement)
+		.join("");
+	const eraseElements = document.elements
+		.filter((element) => element.type === "erase")
+		.map(renderElement)
+		.join("");
 
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="${document.width}" height="${document.height}" viewBox="0 0 ${document.width} ${document.height}" role="img">${background}${document.elements.map(renderElement).join("")}</svg>`;
+	if (!eraseElements) {
+		return `<svg xmlns="http://www.w3.org/2000/svg" width="${document.width}" height="${document.height}" viewBox="0 0 ${document.width} ${document.height}" role="img">${background}${visibleElements}</svg>`;
+	}
+
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${document.width}" height="${document.height}" viewBox="0 0 ${document.width} ${document.height}" role="img"><defs><mask id="${maskId}" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white" />${eraseElements}</mask></defs>${background}<g mask="url(#${maskId})">${visibleElements}</g></svg>`;
 }

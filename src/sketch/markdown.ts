@@ -126,7 +126,7 @@ async function renderSketchAsset(
 			: "";
 	const html =
 		options.mode === "development"
-			? `<figure class="sketch-image-frame sketch-dev-frame" data-pagefind-ignore data-sketch-source="${escapeHtml(source)}"${pathAttribute}${outputAttribute}>${imageHtml}<button class="sketch-edit-button" type="button">Edit sketch</button><div class="sketch-dev-modal" hidden><div class="sketch-dev-dialog" role="dialog" aria-modal="true" aria-label="Sketch editor"><button class="sketch-dev-close" type="button" aria-label="Close sketch editor">Close</button><div class="sketch-dev-editor"></div></div></div></figure>`
+			? `<figure class="sketch-image-frame sketch-dev-frame" data-pagefind-ignore data-sketch-source="${escapeHtml(source)}"${pathAttribute}${outputAttribute}>${imageHtml}<button class="sketch-edit-button" type="button">Edit sketch</button><div class="sketch-dev-modal" hidden><div class="sketch-dev-dialog" role="dialog" aria-modal="true" aria-label="Sketch editor"><button class="sketch-dev-close" type="button" title="Close sketch editor" aria-label="Close sketch editor">×</button><div class="sketch-dev-editor"></div></div></div></figure>`
 			: `<figure class="sketch-image-frame" data-pagefind-ignore>${imageHtml}</figure>`;
 
 	return {

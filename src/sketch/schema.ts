@@ -7,7 +7,7 @@ type BaseElement = {
 };
 
 export type SketchStrokeElement = BaseElement & {
-	type: "stroke" | "highlight";
+	type: "stroke" | "highlight" | "erase";
 	points: SketchPoint[];
 	size?: number;
 };
@@ -137,7 +137,8 @@ function validateElement(input: unknown, index: number): SketchElement {
 
 	switch (input.type) {
 		case "stroke":
-		case "highlight": {
+		case "highlight":
+		case "erase": {
 			if (!Array.isArray(input.points)) {
 				throw new Error(`${prefix}.points must be an array`);
 			}
@@ -227,6 +228,14 @@ function normalizeElement(element: SketchElement): SketchElement {
 				color: element.color ?? DEFAULT_HIGHLIGHT_COLOR,
 				opacity: element.opacity ?? 0.35,
 				size: normalizeNumber(element.size ?? 18),
+				points: element.points.map(normalizePoint),
+			};
+		case "erase":
+			return {
+				id: element.id,
+				type: "erase",
+				opacity: 1,
+				size: normalizeNumber(element.size ?? 24),
 				points: element.points.map(normalizePoint),
 			};
 		case "line":

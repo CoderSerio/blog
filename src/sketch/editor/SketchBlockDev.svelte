@@ -1,4 +1,5 @@
 <script lang="ts">
+import "./sketch-block-dev.css";
 import { mount } from "svelte";
 import { type SketchDocument, validateSketch } from "../schema";
 import { renderSketchToSvg } from "../svg";
@@ -7,6 +8,7 @@ import SketchEditor from "./SketchEditor.svelte";
 type MountedEditor = ReturnType<typeof mount>;
 
 const mountedEditors = new WeakMap<HTMLElement, MountedEditor>();
+const dirtyEditors = new WeakMap<HTMLElement, boolean>();
 let activeModal: HTMLElement | null = null;
 
 type SketchLoadResult = {
@@ -66,6 +68,15 @@ function closeActiveModal() {
 		return;
 	}
 
+	const editor = activeModal.querySelector<HTMLElement>(".sketch-dev-editor");
+	if (
+		editor &&
+		dirtyEditors.get(editor) &&
+		!window.confirm("Canvas has unsaved changes. Close without saving?")
+	) {
+		return;
+	}
+
 	activeModal.hidden = true;
 	document.body.classList.remove("sketch-modal-open");
 	activeModal = null;
@@ -88,6 +99,9 @@ function setupDevSketchBlocks() {
 		}
 
 		button.dataset.bound = "true";
+		if (modal.parentElement !== document.body) {
+			document.body.append(modal);
+		}
 		void loadLatestDocument(frame).catch((error) => {
 			console.error(error);
 		});
@@ -131,6 +145,9 @@ function setupDevSketchBlocks() {
 							imageUrl?: string;
 						}) => {
 							updateFrameDocument(frame, document, imageUrl);
+						},
+						onDirtyChange: (dirty: boolean) => {
+							dirtyEditors.set(container, dirty);
 						},
 					},
 				}),

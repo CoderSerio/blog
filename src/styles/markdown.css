@@ -177,27 +177,6 @@
         font-family: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
     }
 
-    .sketch-dev-modal[hidden] {
-        @apply hidden;
-    }
-
-    .sketch-dev-modal {
-        @apply fixed inset-0 z-[100] overflow-y-auto bg-black/70 p-4;
-    }
-
-    .sketch-dev-dialog {
-        @apply relative mx-auto min-h-[calc(100vh-2rem)] max-w-7xl border-2 border-[var(--primary)] bg-slate-100 shadow-[8px_8px_0_var(--primary)];
-    }
-
-    .sketch-dev-close {
-        @apply absolute right-3 top-3 z-10 border border-slate-400 bg-white px-3 py-1 text-sm font-semibold text-slate-900 shadow;
-    }
-
-    :global(body.sketch-modal-open) {
-        overflow: hidden;
-    }
-
-
     ul, ol {
         li::marker {
             @apply text-[var(--primary)];
