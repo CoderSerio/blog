@@ -1,0 +1,151 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getPostUrlBySlug, getSeriesUrlBySlug, url } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
+import { getSeriesForPost } from "@/content/series";
+import { events } from "@/data/events";
+import OcSlot from "../OcSlot/index.astro";
+
+interface Props {
+	entries: CollectionEntry<"posts">[];
+}
+
+const { entries } = Astro.props;
+const entryModels = await Promise.all(
+	entries.map(async (entry) => {
+		const { remarkPluginFrontmatter } = await entry.render();
+		return {
+			entry,
+			series: getSeriesForPost(entry.slug),
+			excerpt: entry.data.description || remarkPluginFrontmatter.excerpt,
+			minutes: remarkPluginFrontmatter.minutes,
+		};
+	}),
+);
+
+const featuredSeries =
+	entryModels.find((item) => item.series) ?? entryModels[0];
+const featuredProject =
+	entryModels.find(
+		(item) => item.entry.data.category === "Projects" && !item.series,
+	) ??
+	entryModels.find((item) => item !== featuredSeries) ??
+	entryModels[0];
+const now = new Date().toISOString().slice(0, 10);
+const featuredEvent =
+	events.find((event) => event.start >= now) ?? events.at(-1);
+const recent = entryModels.slice(0, 5);
+const artifactEntries = entryModels.slice(0, 3);
+---
+
+<div class="workshop-home">
+	<section class="workshop-hero" aria-labelledby="workshop-hero-title">
+		<div class="workshop-hero-copy">
+			<p class="workshop-kicker">Web infrastructure · interactive creative</p>
+			<h1 id="workshop-hero-title">Building the web<br />at build time.</h1>
+			<p class="workshop-lede">
+				I ship <a href={url("/archive/?category=Projects")}>tools</a>, write about them,
+				and share what I learn.
+			</p>
+			<div class="workshop-focus-note">
+				<span>Current focus</span>
+				<strong>Bundlers, Rust, WebAssembly, developer tooling, and friendly docs.</strong>
+			</div>
+			<div class="workshop-tail-path" aria-hidden="true"></div>
+		</div>
+		<OcSlot class="workshop-hero-oc" label="Replaceable OC portrait" />
+	</section>
+
+	<section class="workshop-section" aria-labelledby="featured-heading">
+		<div class="workshop-section-heading">
+			<h2 id="featured-heading">Featured on the bench</h2>
+			<span class="workshop-paw-signature" aria-hidden="true"></span>
+		</div>
+		<div class="workshop-feature-grid">
+			{featuredSeries && (
+				<article class="workshop-feature-card workshop-feature-card-series">
+					<p class="workshop-card-label">Binder series</p>
+					<h3>{featuredSeries.series?.title ?? featuredSeries.entry.data.title}</h3>
+					<p>{featuredSeries.series?.description ?? featuredSeries.excerpt}</p>
+					<div class="workshop-tag-row">
+						{featuredSeries.entry.data.tags.slice(0, 3).map((tag) => <span>{tag}</span>)}
+					</div>
+					<a class="workshop-text-link" href={featuredSeries.series ? getSeriesUrlBySlug(featuredSeries.series.slug) : getPostUrlBySlug(featuredSeries.entry.slug)}>
+						Read the binder <Icon name="material-symbols:arrow-right-alt-rounded" />
+					</a>
+				</article>
+			)}
+
+			{featuredProject && (
+				<article class="workshop-feature-card workshop-feature-card-project">
+					<p class="workshop-card-label">Build project</p>
+					<h3>{featuredProject.entry.data.title}</h3>
+					<p>{featuredProject.excerpt}</p>
+					<div class="workshop-tag-row">
+						{featuredProject.entry.data.tags.slice(0, 3).map((tag) => <span>{tag}</span>)}
+					</div>
+					<a class="workshop-text-link" href={getPostUrlBySlug(featuredProject.entry.slug)}>
+						Inspect the build <Icon name="material-symbols:arrow-right-alt-rounded" />
+					</a>
+				</article>
+			)}
+
+			{featuredEvent && (
+				<article class="workshop-feature-card workshop-feature-card-event">
+					<p class="workshop-card-label">Next on the calendar</p>
+					<time datetime={featuredEvent.start}>{featuredEvent.start}</time>
+					<h3>{featuredEvent.title}</h3>
+					<p>{featuredEvent.location} · {featuredEvent.category}</p>
+					<a class="workshop-text-link" href={url("/events/")}>
+						Open calendar <Icon name="material-symbols:arrow-right-alt-rounded" />
+					</a>
+				</article>
+			)}
+		</div>
+	</section>
+
+	<div class="workshop-board-grid">
+		<section class="workshop-ledger workshop-paper-panel" aria-labelledby="logs-heading">
+			<div class="workshop-section-heading workshop-section-heading-small">
+				<h2 id="logs-heading">Recent field notes</h2>
+				<a href={url("/archive/")}>View archive →</a>
+			</div>
+			<ol>
+				{recent.map(({ entry, minutes }) => (
+					<li>
+						<time datetime={entry.data.published.toISOString()}>
+							{entry.data.published.toLocaleDateString("en", { month: "short", day: "2-digit" })}
+						</time>
+						<a href={getPostUrlBySlug(entry.slug)}>{entry.data.title}</a>
+						<span>{entry.data.tags[0] ?? "note"}</span>
+						<small>{minutes} min</small>
+					</li>
+				))}
+			</ol>
+		</section>
+
+		<section class="workshop-artifact-shelf workshop-paper-panel" aria-labelledby="artifacts-heading">
+			<div class="workshop-section-heading workshop-section-heading-small">
+				<h2 id="artifacts-heading">Artifact shelf</h2>
+				<span>Real notes, diagrams, and experiments</span>
+			</div>
+			<div class="workshop-artifact-grid">
+				{artifactEntries.map(({ entry }, index) => (
+					<a href={getPostUrlBySlug(entry.slug)} class={`workshop-artifact workshop-artifact-${index + 1}`}>
+						<span>{index === 0 ? "Diagram" : index === 1 ? "Code" : "Field note"}</span>
+						<strong>{entry.data.title}</strong>
+						<small>{entry.data.tags.slice(0, 2).join(" · ")}</small>
+					</a>
+				))}
+			</div>
+		</section>
+	</div>
+
+	<section class="workshop-persona-strip workshop-paper-panel" aria-label="Persona tags">
+		<span>Fursona notes</span>
+		<strong>red panda</strong>
+		<strong>tinkerer</strong>
+		<strong>curious</strong>
+		<strong>quiet energy</strong>
+	</section>
+</div>

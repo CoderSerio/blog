@@ -1,0 +1,12 @@
+---
+import EventCalendar from "@components/events/EventCalendar/index.svelte";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { eventCategories, events } from "@/data/events";
+---
+
+<MainGridLayout
+	title="Events"
+	description="A hand-maintained calendar for AI and developer conferences, launches, and platform events."
+>
+	<EventCalendar events={events} categories={eventCategories} client:only="svelte" />
+</MainGridLayout>

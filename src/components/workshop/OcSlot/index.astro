@@ -1,0 +1,29 @@
+---
+interface Props {
+	class?: string;
+	src?: string;
+	alt?: string;
+	label?: string;
+}
+
+const { class: className, src, alt = "", label = "OC slot" } = Astro.props;
+---
+
+<figure class:list={["workshop-oc-slot", className]}>
+	{src ? (
+		<img src={src} alt={alt} loading="lazy" decoding="async" />
+	) : (
+		<div class="workshop-oc-fallback" aria-hidden="true">
+			<span class="workshop-oc-node workshop-oc-node-a"></span>
+			<span class="workshop-oc-node workshop-oc-node-b"></span>
+			<span class="workshop-oc-node workshop-oc-node-c"></span>
+			<span class="workshop-oc-link workshop-oc-link-a"></span>
+			<span class="workshop-oc-link workshop-oc-link-b"></span>
+			<span class="workshop-oc-monogram">C</span>
+		</div>
+	)}
+	<figcaption>
+		<strong>{label}</strong>
+		<span>{src ? "Replaceable persona asset" : "Your future OC lives here"}</span>
+	</figcaption>
+</figure>

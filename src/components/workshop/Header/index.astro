@@ -1,0 +1,80 @@
+---
+import Search from "@components/search/Search/index.svelte";
+import { Icon } from "astro-icon/components";
+import { url } from "../../../utils/url-utils";
+
+const pathname = Astro.url.pathname;
+const category = Astro.url.searchParams.get("category");
+const navItems = [
+	{
+		label: "Articles",
+		href: "/archive/",
+		active:
+			pathname === "/" ||
+			pathname.startsWith("/posts/") ||
+			pathname.startsWith("/archive/"),
+	},
+	{
+		label: "Projects",
+		href: "/archive/?category=Projects",
+		active: pathname.startsWith("/series/") || category === "Projects",
+	},
+	{
+		label: "Events",
+		href: "/events/",
+		active: pathname.startsWith("/events/"),
+	},
+	{ label: "About", href: "/about/", active: pathname.startsWith("/about/") },
+];
+---
+
+<header class="workshop-header">
+	<div class="workshop-header-inner">
+		<a class="workshop-brand" href={url("/")} aria-label="Carbon home">
+			<span class="workshop-logo" aria-hidden="true">C</span>
+			<span>Carbon</span>
+		</a>
+
+		<nav class="workshop-desktop-nav" aria-label="Primary navigation">
+			{navItems.map((item) => (
+				<a class:list={{ active: item.active }} href={url(item.href)}>{item.label}</a>
+			))}
+		</nav>
+
+		<div class="workshop-header-actions">
+			<div class="workshop-search-shell">
+				<Search client:only="svelte" />
+			</div>
+			<button id="workshop-theme-toggle" type="button" aria-label="Toggle color theme" class="workshop-icon-button">
+				<Icon class="workshop-theme-icon workshop-theme-icon-light" name="material-symbols:light-mode-outline-rounded" />
+				<Icon class="workshop-theme-icon workshop-theme-icon-dark" name="material-symbols:dark-mode-outline-rounded" />
+			</button>
+			<details class="workshop-mobile-menu">
+				<summary aria-label="Open navigation">
+					<Icon name="material-symbols:menu-rounded" />
+				</summary>
+				<nav aria-label="Mobile navigation">
+					{navItems.map((item) => (
+						<a class:list={{ active: item.active }} href={url(item.href)}>{item.label}</a>
+					))}
+					<a href="https://github.com/CoderSerio" target="_blank" rel="noreferrer">GitHub ↗</a>
+				</nav>
+			</details>
+		</div>
+	</div>
+</header>
+
+<script>
+	function bindWorkshopThemeToggle() {
+		const button = document.querySelector<HTMLButtonElement>("#workshop-theme-toggle");
+		if (!button || button.dataset.bound === "true") return;
+
+		button.dataset.bound = "true";
+		button.addEventListener("click", () => {
+			const dark = document.documentElement.classList.toggle("dark");
+			localStorage.setItem("theme", dark ? "dark" : "light");
+		});
+	}
+
+	bindWorkshopThemeToggle();
+</script>
