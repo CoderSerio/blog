@@ -24,30 +24,39 @@ const {
 	headings = [],
 } = Astro.props;
 const isReadingLayout = headings.length > 0;
+const isHomePage = Astro.url.pathname === "/";
+const bindingLoops = Array.from({ length: 36 });
 ---
 
 <Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle}>
 	<slot slot="head" name="head"></slot>
-	<WorkshopHeader />
-	<div class:list={["workshop-page-frame", { "workshop-reading-frame": isReadingLayout }]}>
-		{isReadingLayout ? (
-			<aside id="toc-wrapper" class="workshop-reading-rail" aria-label="On this page">
-				<a class="workshop-back-link" href="/archive/">← Back to articles</a>
-				<div id="toc-inner-wrapper">
-					<p class="workshop-rail-label">On this page</p>
-					<div id="toc"><TOC headings={headings} /></div>
-				</div>
-			</aside>
-		) : (
-			<div id="toc" hidden></div>
-		)}
-
-		<main id="swup-container" class="transition-swup-fade workshop-main">
-			<div id="content-wrapper">
-				<slot />
-				<Footer />
+	<div class:list={["workshop-notebook-shell", { "workshop-notebook-shell-home": isHomePage }]}>
+		{isHomePage && (
+			<div class="workshop-notebook-binding" aria-hidden="true">
+				{bindingLoops.map(() => <i></i>)}
 			</div>
-		</main>
+		)}
+		<WorkshopHeader />
+		<div class:list={["workshop-page-frame", { "workshop-reading-frame": isReadingLayout }]}>
+			{isReadingLayout ? (
+				<aside id="toc-wrapper" class="workshop-reading-rail" aria-label="On this page">
+					<a class="workshop-back-link" href="/archive/">← Back to articles</a>
+					<div id="toc-inner-wrapper">
+						<p class="workshop-rail-label">On this page</p>
+						<div id="toc"><TOC headings={headings} /></div>
+					</div>
+				</aside>
+			) : (
+				<div id="toc" hidden></div>
+			)}
+
+			<main id="swup-container" class="transition-swup-fade workshop-main">
+				<div id="content-wrapper">
+					<slot />
+					<Footer />
+				</div>
+			</main>
+		</div>
 	</div>
 	<BackToTop />
 </Layout>

@@ -1757,3 +1757,160 @@ body.workshop-site::before {
 		gap: 1rem;
 	}
 }
+
+/* Workshop Zine v3: the home page is one physical notebook, not a beige web
+   canvas containing unrelated paper cards. Keep this shell deliberately
+   separate from the content styling so the material metaphor can be refined
+   without baking readable content into an image. */
+body.workshop-site:has(.workshop-notebook-shell-home) {
+	background: #c9c5bc;
+}
+
+body.workshop-site:has(.workshop-notebook-shell-home)::before {
+	background-image:
+		linear-gradient(rgba(198, 194, 185, 0.82), rgba(198, 194, 185, 0.82)),
+		url("../assets/workshop/paper-fiber-tile.webp");
+	background-size: auto, 680px;
+	filter: saturate(0.42) contrast(0.92);
+	opacity: 0.92;
+}
+
+.workshop-notebook-shell-home {
+	position: relative;
+	isolation: isolate;
+	width: min(calc(100% - 4.5rem), 88rem);
+	margin: clamp(1.5rem, 3vw, 2.75rem) auto 3.5rem;
+	border: 1px solid rgba(45, 39, 31, 0.2);
+	background-color: #fbf6e9;
+	background-image:
+		linear-gradient(rgba(255, 251, 241, 0.66), rgba(255, 251, 241, 0.66)),
+		url("../assets/workshop/paper-fiber-tile.webp");
+	background-size: auto, 680px;
+	box-shadow:
+		0 30px 70px rgba(45, 39, 31, 0.2),
+		0 5px 14px rgba(45, 39, 31, 0.14),
+		inset 4.25rem 0 2.8rem -3rem rgba(58, 45, 30, 0.14);
+}
+
+.workshop-notebook-shell-home::before {
+	position: absolute;
+	z-index: 3;
+	top: 0;
+	bottom: 0;
+	left: 3.2rem;
+	width: 1px;
+	background: rgba(67, 54, 39, 0.22);
+	box-shadow:
+		0.38rem 0 0 rgba(255, 255, 255, 0.5),
+		0.8rem 0 1.5rem rgba(67, 54, 39, 0.07);
+	content: "";
+	pointer-events: none;
+}
+
+.workshop-notebook-shell-home::after {
+	position: absolute;
+	z-index: 2;
+	inset: 0.45rem -0.35rem -0.45rem 0.35rem;
+	border-right: 1px solid rgba(57, 47, 34, 0.13);
+	border-bottom: 1px solid rgba(57, 47, 34, 0.16);
+	content: "";
+	pointer-events: none;
+}
+
+.workshop-notebook-binding {
+	position: absolute;
+	z-index: 12;
+	top: 1.65rem;
+	bottom: 1.65rem;
+	left: -1.05rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	width: 3.25rem;
+	pointer-events: none;
+}
+
+.workshop-notebook-binding i {
+	position: relative;
+	display: block;
+	width: 2.65rem;
+	height: 0.72rem;
+	border: 3px solid #161615;
+	border-radius: 999px;
+	background: transparent;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.28),
+		1px 2px 2px rgba(29, 25, 20, 0.3);
+	transform: rotate(1.2deg);
+}
+
+.workshop-notebook-binding i:nth-child(3n) {
+	transform: rotate(-1deg) translateX(0.08rem);
+}
+
+.workshop-notebook-shell-home .workshop-header {
+	position: relative;
+	top: auto;
+	border-bottom: 1px solid rgba(49, 41, 31, 0.24);
+	background: transparent;
+	box-shadow: none;
+	backdrop-filter: none;
+}
+
+.workshop-notebook-shell-home .workshop-header-inner {
+	width: 100%;
+	padding-right: clamp(1.5rem, 3vw, 2.75rem);
+	padding-left: clamp(5.25rem, 6vw, 6.25rem);
+}
+
+.workshop-notebook-shell-home .workshop-page-frame {
+	width: 100%;
+	margin: 0;
+	padding: 1.3rem clamp(1.5rem, 3vw, 2.75rem) 0 clamp(5.25rem, 6vw, 6.25rem);
+}
+
+.workshop-notebook-shell-home .workshop-home::before {
+	display: none;
+}
+
+.workshop-notebook-shell-home .workshop-footer {
+	margin-bottom: 1.5rem;
+}
+
+:root.dark body.workshop-site:has(.workshop-notebook-shell-home) {
+	background: #17191b;
+}
+
+:root.dark .workshop-notebook-shell-home {
+	background-color: #eee2cd;
+	background-image:
+		linear-gradient(rgba(239, 228, 208, 0.9), rgba(239, 228, 208, 0.9)),
+		url("../assets/workshop/paper-fiber-tile.webp");
+}
+
+@media (max-width: 760px) {
+	body.workshop-site:has(.workshop-notebook-shell-home) {
+		background: var(--workshop-paper);
+	}
+
+	.workshop-notebook-shell-home {
+		width: 100%;
+		margin: 0;
+		border: 0;
+		box-shadow: none;
+	}
+
+	.workshop-notebook-shell-home::before,
+	.workshop-notebook-shell-home::after,
+	.workshop-notebook-binding {
+		display: none;
+	}
+
+	.workshop-notebook-shell-home .workshop-header-inner {
+		padding-inline: 1rem;
+	}
+
+	.workshop-notebook-shell-home .workshop-page-frame {
+		padding: 1rem 0.75rem 0;
+	}
+}
