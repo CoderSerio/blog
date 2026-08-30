@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 520" fill="none">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" stroke="#315bc4" stroke-width=".55" opacity=".16"/></pattern>
+    <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(18)"><path d="M0 0V9" stroke="#34302b" stroke-width="1.2" opacity=".22"/></pattern>
+    <filter id="rough" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="3" seed="41" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="4"/></filter>
+  </defs>
+  <rect x="9" y="9" width="502" height="502" fill="url(#grid)" stroke="#315bc4" stroke-width="2" stroke-dasharray="7 7" filter="url(#rough)"/>
+  <g filter="url(#rough)">
+    <path d="M170 198L151 98L220 151C245 135 280 135 304 151L374 98L350 202C373 231 381 278 366 314C344 369 298 395 258 395C216 395 168 367 149 312C136 274 146 230 170 198Z" fill="url(#hatch)" stroke="#34302b" stroke-width="5"/>
+    <path d="M195 261C220 245 296 245 323 261M215 297C241 317 280 317 306 296" stroke="#34302b" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="214" cy="234" r="8" fill="#315bc4"/><circle cx="306" cy="234" r="8" fill="#315bc4"/>
+    <path d="M254 265L264 265L259 274Z" fill="#d4492f"/>
+    <path d="M139 350C174 409 347 408 383 349C364 448 320 477 260 477C199 477 156 449 139 350Z" fill="url(#hatch)" stroke="#34302b" stroke-width="4"/>
+  </g>
+  <path d="M63 444C116 462 117 432 157 447" stroke="#315bc4" stroke-width="3" stroke-dasharray="10 9" filter="url(#rough)"/>
+</svg>

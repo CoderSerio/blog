@@ -1,4 +1,6 @@
 ---
+import ocPlaceholder from "@assets/workshop/oc-placeholder-sketch.svg";
+
 interface Props {
 	class?: string;
 	src?: string;
@@ -13,14 +15,7 @@ const { class: className, src, alt = "", label = "OC slot" } = Astro.props;
 	{src ? (
 		<img src={src} alt={alt} loading="lazy" decoding="async" />
 	) : (
-		<div class="workshop-oc-fallback" aria-hidden="true">
-			<span class="workshop-oc-node workshop-oc-node-a"></span>
-			<span class="workshop-oc-node workshop-oc-node-b"></span>
-			<span class="workshop-oc-node workshop-oc-node-c"></span>
-			<span class="workshop-oc-link workshop-oc-link-a"></span>
-			<span class="workshop-oc-link workshop-oc-link-b"></span>
-			<span class="workshop-oc-monogram">C</span>
-		</div>
+		<img class="workshop-oc-fallback" src={ocPlaceholder.src} alt="" aria-hidden="true" />
 	)}
 	<figcaption>
 		<strong>{label}</strong>

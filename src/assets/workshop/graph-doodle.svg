@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 250" fill="none">
+  <defs>
+    <pattern id="grid" width="18" height="18" patternUnits="userSpaceOnUse">
+      <path d="M18 0H0V18" stroke="#315bc4" stroke-width=".55" opacity=".18"/>
+    </pattern>
+    <filter id="rough" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="9" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.2"/>
+    </filter>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0 0L6 3L0 6" stroke="#24211d" stroke-width="1.1"/>
+    </marker>
+  </defs>
+  <path d="M8 9H412V242H8Z" fill="url(#grid)" stroke="#315bc4" stroke-width="1.4" opacity=".82" filter="url(#rough)"/>
+  <g stroke="#24211d" stroke-width="2" opacity=".85" marker-end="url(#arrow)" filter="url(#rough)">
+    <path d="M72 83L151 52"/><path d="M75 88L157 126"/><path d="M177 58L249 84"/><path d="M179 126L250 88"/><path d="M276 88L349 58"/><path d="M276 91L345 152"/><path d="M177 132L243 179"/>
+  </g>
+  <g fill="#f7efdf" stroke="#24211d" stroke-width="2" filter="url(#rough)">
+    <circle cx="62" cy="88" r="15"/><rect x="151" y="40" width="30" height="29"/><rect x="153" y="113" width="31" height="31"/><circle cx="263" cy="87" r="17"/><rect x="343" y="43" width="31" height="31"/><rect x="338" y="146" width="37" height="34"/><rect x="239" y="168" width="34" height="30"/>
+  </g>
+  <path d="M340 147L375 181M375 146L339 180" stroke="#d4492f" stroke-width="4" opacity=".82" filter="url(#rough)"/>
+  <path d="M34 208C95 220 136 204 195 213" stroke="#315bc4" stroke-width="2.3" stroke-dasharray="8 8" filter="url(#rough)"/>
+</svg>

@@ -1,5 +1,7 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import graphDoodle from "@assets/workshop/graph-doodle.svg";
+import projectDoodle from "@assets/workshop/project-doodle.svg";
 import { getPostUrlBySlug, getSeriesUrlBySlug, url } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import { getSeriesForPost } from "@/content/series";
@@ -54,6 +56,11 @@ const artifactEntries = entryModels.slice(0, 3);
 			<div class="workshop-tail-path" aria-hidden="true"></div>
 		</div>
 		<OcSlot class="workshop-hero-oc" label="Replaceable OC portrait" />
+		<aside class="workshop-key-note" aria-label="Key idea">
+			<span>Key idea</span>
+			<p>Build the web like a dependency graph. Recompute the minimum.</p>
+			<small>Workbench note · 01</small>
+		</aside>
 	</section>
 
 	<section class="workshop-section" aria-labelledby="featured-heading">
@@ -64,41 +71,57 @@ const artifactEntries = entryModels.slice(0, 3);
 		<div class="workshop-feature-grid">
 			{featuredSeries && (
 				<article class="workshop-feature-card workshop-feature-card-series">
-					<p class="workshop-card-label">Binder series</p>
-					<h3>{featuredSeries.series?.title ?? featuredSeries.entry.data.title}</h3>
-					<p>{featuredSeries.series?.description ?? featuredSeries.excerpt}</p>
-					<div class="workshop-tag-row">
-						{featuredSeries.entry.data.tags.slice(0, 3).map((tag) => <span>{tag}</span>)}
+					<div class="workshop-feature-visual" aria-hidden="true">
+						<img src={graphDoodle.src} alt="" />
 					</div>
-					<a class="workshop-text-link" href={featuredSeries.series ? getSeriesUrlBySlug(featuredSeries.series.slug) : getPostUrlBySlug(featuredSeries.entry.slug)}>
-						Read the binder <Icon name="material-symbols:arrow-right-alt-rounded" />
-					</a>
+					<div class="workshop-feature-copy">
+						<p class="workshop-card-label">Binder series</p>
+						<h3>{featuredSeries.series?.title ?? featuredSeries.entry.data.title}</h3>
+						<p>{featuredSeries.series?.description ?? featuredSeries.excerpt}</p>
+						<div class="workshop-tag-row">
+							{featuredSeries.entry.data.tags.slice(0, 3).map((tag) => <span>{tag}</span>)}
+						</div>
+						<a class="workshop-text-link" href={featuredSeries.series ? getSeriesUrlBySlug(featuredSeries.series.slug) : getPostUrlBySlug(featuredSeries.entry.slug)}>
+							Read the binder <Icon name="material-symbols:arrow-right-alt-rounded" />
+						</a>
+					</div>
 				</article>
 			)}
 
 			{featuredProject && (
 				<article class="workshop-feature-card workshop-feature-card-project">
-					<p class="workshop-card-label">Build project</p>
-					<h3>{featuredProject.entry.data.title}</h3>
-					<p>{featuredProject.excerpt}</p>
-					<div class="workshop-tag-row">
-						{featuredProject.entry.data.tags.slice(0, 3).map((tag) => <span>{tag}</span>)}
+					<div class="workshop-feature-visual" aria-hidden="true">
+						<img src={projectDoodle.src} alt="" />
 					</div>
-					<a class="workshop-text-link" href={getPostUrlBySlug(featuredProject.entry.slug)}>
-						Inspect the build <Icon name="material-symbols:arrow-right-alt-rounded" />
-					</a>
+					<div class="workshop-feature-copy">
+						<p class="workshop-card-label">Build project</p>
+						<h3>{featuredProject.entry.data.title}</h3>
+						<p>{featuredProject.excerpt}</p>
+						<div class="workshop-tag-row">
+							{featuredProject.entry.data.tags.slice(0, 3).map((tag) => <span>{tag}</span>)}
+						</div>
+						<a class="workshop-text-link" href={getPostUrlBySlug(featuredProject.entry.slug)}>
+							Inspect the build <Icon name="material-symbols:arrow-right-alt-rounded" />
+						</a>
+					</div>
 				</article>
 			)}
 
 			{featuredEvent && (
 				<article class="workshop-feature-card workshop-feature-card-event">
-					<p class="workshop-card-label">Next on the calendar</p>
-					<time datetime={featuredEvent.start}>{featuredEvent.start}</time>
-					<h3>{featuredEvent.title}</h3>
-					<p>{featuredEvent.location} · {featuredEvent.category}</p>
-					<a class="workshop-text-link" href={url("/events/")}>
-						Open calendar <Icon name="material-symbols:arrow-right-alt-rounded" />
-					</a>
+					<div class="workshop-event-sheet" aria-hidden="true">
+						<span>{featuredEvent.start.slice(5, 7)}</span>
+						<strong>{featuredEvent.start.slice(8, 10)}</strong>
+					</div>
+					<div class="workshop-feature-copy">
+						<p class="workshop-card-label">Next on the calendar</p>
+						<time datetime={featuredEvent.start}>{featuredEvent.start}</time>
+						<h3>{featuredEvent.title}</h3>
+						<p>{featuredEvent.location} · {featuredEvent.category}</p>
+						<a class="workshop-text-link" href={url("/events/")}>
+							Open calendar <Icon name="material-symbols:arrow-right-alt-rounded" />
+						</a>
+					</div>
 				</article>
 			)}
 		</div>

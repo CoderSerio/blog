@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" fill="none">
+  <defs>
+    <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M16 0H0V16" stroke="#315bc4" stroke-width=".5" opacity=".18"/></pattern>
+    <filter id="rough" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="22" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="3"/></filter>
+  </defs>
+  <path d="M8 10H351V231H8Z" fill="url(#grid)" stroke="#315bc4" stroke-width="1.4" filter="url(#rough)"/>
+  <g stroke="#25221e" stroke-width="2.1" filter="url(#rough)">
+    <path d="M27 190L92 115L137 154L201 77L329 191"/>
+    <path d="M33 191C90 181 137 198 187 188C241 177 275 190 331 182"/>
+    <path d="M61 164L61 205M292 154L292 203M109 147L109 204"/>
+    <path d="M44 176L61 149L78 176M275 168L293 135L310 168M91 162L109 131L126 163"/>
+  </g>
+  <circle cx="275" cy="55" r="20" stroke="#d4492f" stroke-width="2.4" filter="url(#rough)"/>
+  <g stroke="#d4492f" stroke-width="2" filter="url(#rough)"><path d="M275 23V9M275 101V87M243 55H229M321 55H307M252 32L241 21M309 89L298 78M298 32L309 21M241 89L252 78"/></g>
+</svg>
