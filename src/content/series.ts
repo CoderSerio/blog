@@ -20,7 +20,7 @@ export const series: Record<string, SeriesConfig> = {
 				href: "https://github.com/atom-universe/feopack",
 			},
 		],
-		posts: ["feopack", "loaders-of-rspack"],
+		posts: ["feopack", "loaders-of-rspack", "feopack-pitch-and-js-loaders"],
 	},
 };
 
