@@ -22,6 +22,7 @@ interface Props {
 	lang?: string;
 	setOGTypeArticle?: boolean;
 	headings?: MarkdownHeading[];
+	hideSidebar?: boolean;
 }
 
 const {
@@ -31,6 +32,7 @@ const {
 	lang,
 	setOGTypeArticle,
 	headings = [],
+	hideSidebar = false,
 } = Astro.props;
 const hasBannerCredit =
 	siteConfig.banner.enable && siteConfig.banner.credit.enable;
@@ -82,7 +84,11 @@ const mainPanelTop = siteConfig.banner.enable
 
             <SideBar class="mb-4 row-start-2 row-end-3 col-span-2 lg:row-start-1 lg:row-end-2 lg:col-span-1 lg:max-w-[17.5rem] onload-animation" headings={headings}></SideBar>
 
-            <main id="swup-container" class="transition-swup-fade col-span-2 lg:col-span-1 overflow-hidden">
+            <main
+                id="swup-container"
+                data-hide-sidebar={hideSidebar ? "true" : undefined}
+                class="transition-swup-fade col-span-2 lg:col-span-1 overflow-hidden"
+            >
                 <div id="content-wrapper">
                     <!-- the overflow-hidden here prevent long text break the layout-->
                     <!-- make id different from windows.swup global property -->
@@ -123,3 +129,18 @@ const mainPanelTop = siteConfig.banner.enable
     </div>
 </div>
 </Layout>
+
+<style is:global>
+    #main-grid:has(> #swup-container[data-hide-sidebar="true"]) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #main-grid:has(> #swup-container[data-hide-sidebar="true"]) > #sidebar {
+        display: none;
+    }
+
+    #main-grid:has(> #swup-container[data-hide-sidebar="true"]) > #swup-container,
+    #main-grid:has(> #swup-container[data-hide-sidebar="true"]) > .footer {
+        grid-column: 1 / -1;
+    }
+</style>
