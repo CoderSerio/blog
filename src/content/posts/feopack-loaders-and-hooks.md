@@ -5,7 +5,7 @@ description: "How Feopack exposed its compiler lifecycle to Rust and JavaScript 
 image: ''
 tags: [Rust, Bundler, Rspack, Webpack, Plugin, Hooks, NAPI]
 category: Projects
-draft: true
+draft: false
 lang: en
 ---
 
