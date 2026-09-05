@@ -113,11 +113,11 @@ Asset emission then moved into its own module in [`22b30fc`](https://github.com/
 
 ```mermaid
 flowchart LR
-  Run["run"] --> Compile["compile"]
-  Compile --> Make["make"]
-  Make --> Seal["seal"]
-  Seal --> Emit["emit assets"]
-  Emit --> Done["done"]
+  RunPhase[run] --> CompilePhase[compile]
+  CompilePhase --> MakePhase[make]
+  MakePhase --> SealPhase[seal]
+  SealPhase --> EmitPhase[emit assets]
+  EmitPhase --> DonePhase[done]
 ```
 
 There is a useful difference between simplifying a system and pretending that the missing complexity does not exist. Production compilers have more states, failure paths, invalidation rules, and ownership concerns than this diagram shows. Feopack ignored most of them here because the immediate question was smaller: where does one build phase end and the next begin?
