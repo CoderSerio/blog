@@ -1,5 +1,5 @@
 ---
-title: "Feopack Loaders: Pitching Across Rust and JavaScript"
+title: "Feopack: Loader Pitch Across Rust and JavaScript"
 published: 2026-09-02
 description: "How Feopack added pitch, replaced noisy inline recipes with Meow v3, crossed the Rust/JavaScript boundary, and preserved one loader chain across two runtimes."
 image: ''
@@ -14,6 +14,15 @@ lang: en
 In the previous post, Feopack's loader system grew from one Rust function into something much more useful.
 
 It could match files with rules, run several transformations in a chain, split one Meow file into virtual modules, and attach an exact loader recipe to each virtual request.
+
+:::commit-trail{title="Implementation trail · 6 commits"}
+- [`2d04387`](https://github.com/atom-universe/feopack/commit/2d04387ea6407a7c30748ebb9071ff55962a0662) — add pitch and short-circuiting with Meow v3
+- [`bcbecf8`](https://github.com/atom-universe/feopack/commit/bcbecf838182b49874604c3b1dbb68680fd19cea) — simplify the Meow loader registry
+- [`e5922b9`](https://github.com/atom-universe/feopack/commit/e5922b956fbfb6c1250e75eedeb982ebe953b94b) — move loader-chain resolution to the loader that owns it
+- [`8d71105`](https://github.com/atom-universe/feopack/commit/8d711053cf2c06e8bd740a8cf22fd33d75cdec81) — execute JavaScript loaders from the Rust build
+- [`814f880`](https://github.com/atom-universe/feopack/commit/814f880bf7d468865d25e5fdcbe133c782cceffb) — preserve one mixed Rust/JavaScript loader chain
+- [`be7732f`](https://github.com/atom-universe/feopack/commit/be7732f7cd1169ffb26683bf19e609dcc3e38dce) — extract loader orchestration from module building
+:::
 
 That last part worked, but the generated imports looked like this:
 
@@ -84,7 +93,9 @@ pub enum PitchResult {
 
 Most loaders only need `normal`. Their pitch function is simply absent. A loader that does need to inspect or redirect the request can provide both.
 
-This machinery arrived in `2d04387`.
+> **Commit [`2d04387`](https://github.com/atom-universe/feopack/commit/2d04387ea6407a7c30748ebb9071ff55962a0662) — Add loader pitch with Meow v3**
+>
+> Give loaders a forward pitch phase and a way to turn the pipeline around before the resource is read.
 
 ## 2. Pitch can turn the pipeline around early
 
@@ -195,9 +206,9 @@ flowchart LR
   Normal --> Module["【JavaScript Module】"]
 ```
 
-The generated import became readable again, and the generic rule table stopped pretending it understood the private structure of every file format.
+The generated import became readable again, and the generic rule table stopped pretending it understood the private structure of every file format. After the initial pitch implementation, [`bcbecf8`](https://github.com/atom-universe/feopack/commit/bcbecf838182b49874604c3b1dbb68680fd19cea) simplified the registry, and [`e5922b9`](https://github.com/atom-universe/feopack/commit/e5922b956fbfb6c1250e75eedeb982ebe953b94b) moved Meow-specific chain resolution next to the loader that owned it.
 
-This progression happened across `2d04387`, `bcbecf8`, and `e5922b9`. I like this sequence because the first implementation did not magically choose the final home for every responsibility. It made the behavior work, then moved knowledge closer to the code that owned it.
+I like this sequence because the first implementation did not magically choose the final home for every responsibility. It made the behavior work, then moved knowledge closer to the code that owned it.
 
 ## 4. A registry of Rust functions is still a closed world
 
@@ -275,7 +286,9 @@ module.exports = function exampleLoader(source) {
 };
 ```
 
-Feopack's first JavaScript loader support landed in `8d71105`. The loader runner itself was adapted from webpack's model, including the distinction between synchronous returns, callbacks, and async loaders. The ecosystem-compatible shape was more valuable than inventing a slightly prettier API that no existing loader understood.
+[`8d71105`](https://github.com/atom-universe/feopack/commit/8d711053cf2c06e8bd740a8cf22fd33d75cdec81) crossed from Rust into a webpack-shaped Node.js loader runner while preserving synchronous, callback, and promise completion styles.
+
+The ecosystem-compatible shape was more valuable than inventing a slightly prettier API that no existing loader understood.
 
 For the first time, Feopack's loader configuration was genuinely extensible. Then the test case became slightly more ambitious, and the first design fell apart.
 
@@ -358,7 +371,11 @@ pub struct JsLoaderRunResult {
 
 The local index inside the JavaScript segment was converted back into an index in the complete mixed chain. That one number told Rust where the reverse traversal should begin.
 
-This version arrived in `814f880`. It is the commit where the Rust and JavaScript implementations stopped behaving like two neighboring pipelines and became two executors for the same pipeline.
+> **Commit [`814f880`](https://github.com/atom-universe/feopack/commit/814f880bf7d468865d25e5fdcbe133c782cceffb) — Mix Rust and JavaScript loaders in one chain**
+>
+> Preserve one global pitch/normal traversal while adjacent loaders may execute in different runtimes.
+
+This is where the Rust and JavaScript implementations stopped behaving like two neighboring pipelines and became two executors for the same pipeline.
 
 ## 7. The module builder should not conduct this orchestra
 
@@ -375,7 +392,9 @@ That file was already responsible for building modules, following dependencies, 
 
 The compiler could technically build modules, but the module builder had started a second career as an air-traffic controller.
 
-The refactor in `be7732f` extracted a dedicated `LoaderRunner`:
+[`be7732f`](https://github.com/atom-universe/feopack/commit/be7732f7cd1169ffb26683bf19e609dcc3e38dce) moved phase traversal and cross-runtime batching out of module graph construction and into a dedicated `LoaderRunner`.
+
+The dedicated `LoaderRunner` looked like this:
 
 ```rust
 pub struct LoaderRunner<'a> {

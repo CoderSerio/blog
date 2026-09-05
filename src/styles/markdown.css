@@ -93,6 +93,18 @@
         }
     }
 
+    .commit-trail {
+        @apply my-6 border-l-4 border-[var(--primary)] bg-[var(--card-bg)] px-5 py-4;
+
+        summary {
+            @apply cursor-pointer select-none font-bold text-[var(--primary)];
+        }
+
+        ul {
+            @apply mb-0 mt-4;
+        }
+    }
+
     .mermaid-pixel-frame {
         @apply relative my-6 mx-0 overflow-x-auto rounded-none border-2 border-[var(--primary)] bg-[var(--card-bg)] px-5 pb-5 pt-8 shadow-[6px_6px_0_var(--primary)] transition;
         image-rendering: pixelated;
@@ -103,7 +115,7 @@
 
         &:before {
             @apply absolute left-3 top-3 bg-[var(--card-bg)] px-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)];
-            content: "mermaid";
+            content: attr(data-diagram-label);
             font-family: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
         }
     }
@@ -115,6 +127,10 @@
             @apply text-red-500;
             content: "mermaid error";
         }
+    }
+
+    .mermaid-pixel-frame.is-build-comparison:before {
+        content: "architecture · webpack ↔ rspack";
     }
 
     .mermaid-preview-button {
@@ -146,12 +162,127 @@
         font-family: inherit !important;
     }
 
+    @media (max-width: 640px) {
+        .mermaid-diagram.is-wide {
+            @apply min-w-[64rem];
+        }
+
+        .mermaid-diagram.is-wide svg {
+            @apply max-w-none;
+        }
+
+        .mermaid-diagram.is-build-comparison {
+            @apply min-w-[80rem];
+        }
+    }
+
     .mermaid-diagram .node rect,
     .mermaid-diagram .node circle,
     .mermaid-diagram .node ellipse,
     .mermaid-diagram .node polygon,
     .mermaid-diagram .node path {
         filter: drop-shadow(2px 2px 0 color-mix(in oklch, var(--primary) 35%, transparent));
+    }
+
+    .mermaid-diagram.is-build-comparison {
+        @apply py-3;
+    }
+
+    .mermaid-diagram.is-build-comparison .cluster rect {
+        fill: color-mix(in oklch, var(--card-bg) 94%, var(--primary)) !important;
+        stroke: color-mix(in oklch, var(--primary) 55%, transparent) !important;
+        stroke-width: 2px !important;
+        rx: 10px;
+        ry: 10px;
+    }
+
+    .mermaid-diagram.is-build-comparison .cluster[id$="-Rspack"] > rect {
+        fill: color-mix(in oklch, var(--card-bg) 92%, #06b6d4) !important;
+        stroke: color-mix(in oklch, #06b6d4 70%, transparent) !important;
+    }
+
+    .mermaid-diagram.is-build-comparison .cluster[id$="-WJavaScript"] > rect,
+    .mermaid-diagram.is-build-comparison .cluster[id$="-RJavaScript"] > rect {
+        fill: color-mix(in oklch, var(--card-bg) 94%, #a78bfa) !important;
+        stroke: color-mix(in oklch, #a78bfa 65%, transparent) !important;
+    }
+
+    .mermaid-diagram.is-build-comparison .cluster[id$="-WExecution"] > rect {
+        fill: color-mix(in oklch, var(--card-bg) 92%, #22c55e) !important;
+        stroke: #22c55e !important;
+        stroke-dasharray: 8 4;
+    }
+
+    .mermaid-diagram.is-build-comparison .cluster[id$="-RBoundary"] > rect {
+        fill: color-mix(in oklch, var(--card-bg) 88%, #f97316) !important;
+        stroke: #f97316 !important;
+        stroke-width: 3px !important;
+        stroke-dasharray: 8 4;
+    }
+
+    .mermaid-diagram.is-build-comparison .cluster[id$="-WCore"] > rect,
+    .mermaid-diagram.is-build-comparison .cluster[id$="-RCore"] > rect {
+        fill: color-mix(in oklch, var(--card-bg) 97%, var(--tw-prose-body)) !important;
+        stroke: color-mix(in oklch, var(--tw-prose-body) 45%, transparent) !important;
+    }
+
+    .mermaid-diagram.is-build-comparison .cluster-label {
+        @apply font-bold tracking-wide;
+    }
+
+    .mermaid-diagram.is-build-comparison .node rect {
+        rx: 8px;
+        ry: 8px;
+    }
+
+    .mermaid-diagram.is-build-comparison .nodeLabel small {
+        @apply font-bold tracking-[0.08em];
+        opacity: 0.78;
+    }
+
+    .mermaid-diagram.is-build-comparison .node.entry rect {
+        fill: color-mix(in oklch, var(--primary) 22%, var(--card-bg)) !important;
+        stroke: var(--primary) !important;
+        stroke-width: 3px !important;
+        filter: drop-shadow(4px 4px 0 color-mix(in oklch, var(--primary) 42%, transparent));
+    }
+
+    .mermaid-diagram.is-build-comparison .node.entry .nodeLabel {
+        @apply font-extrabold;
+    }
+
+    .mermaid-diagram.is-build-comparison .node.ffi rect {
+        fill: color-mix(in oklch, #f97316 18%, var(--card-bg)) !important;
+        stroke: #f97316 !important;
+        stroke-width: 3px !important;
+        stroke-dasharray: 8 4;
+        filter: drop-shadow(4px 4px 0 color-mix(in oklch, #f97316 40%, transparent));
+    }
+
+    .mermaid-diagram.is-build-comparison .node.inProcess rect {
+        fill: color-mix(in oklch, #22c55e 12%, var(--card-bg)) !important;
+        stroke: #22c55e !important;
+        stroke-width: 2px !important;
+    }
+
+    .mermaid-diagram.is-build-comparison .node.extension rect {
+        fill: color-mix(in oklch, #a78bfa 13%, var(--card-bg)) !important;
+        stroke: #a78bfa !important;
+    }
+
+    .mermaid-diagram.is-build-comparison .node.native rect {
+        fill: color-mix(in oklch, #06b6d4 14%, var(--card-bg)) !important;
+        stroke: #06b6d4 !important;
+    }
+
+    .mermaid-diagram.is-build-comparison .node.output rect {
+        fill: color-mix(in oklch, #eab308 13%, var(--card-bg)) !important;
+        stroke: #eab308 !important;
+        stroke-width: 2px !important;
+    }
+
+    .mermaid-diagram.is-build-comparison .edgeLabel {
+        @apply text-xs font-semibold;
     }
 
     .sketch-image-frame {

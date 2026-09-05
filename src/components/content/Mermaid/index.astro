@@ -4,6 +4,10 @@ let mermaidPromise: Promise<any> | null = null;
 let mermaidObserver: IntersectionObserver | null = null;
 
 const mermaidRootMargin = "720px 0px";
+const mermaidWideMarker = /^%%\s*wide\s*%%(?:\r?\n|$)/;
+const mermaidBuildComparisonMarker =
+	/^%%\s*build-comparison\s*%%(?:\r?\n|$)/m;
+const mermaidLabelMarker = /^%%\s*label:\s*(.+?)\s*%%(?:\r?\n|$)/m;
 
 async function openMermaidPreview(diagram: HTMLElement) {
 	const svg = diagram.querySelector("svg");
@@ -116,6 +120,15 @@ async function renderMermaidDiagram(diagram: HTMLElement) {
 	diagram.dataset.rendering = "true";
 
 	const source = decodeURIComponent(diagram.dataset.mermaid ?? "");
+	diagram.classList.toggle("is-wide", mermaidWideMarker.test(source));
+	const isBuildComparison = mermaidBuildComparisonMarker.test(source);
+	const diagramLabel = source.match(mermaidLabelMarker)?.[1]?.trim();
+	const frame = diagram.closest<HTMLElement>(".mermaid-pixel-frame");
+	if (frame) {
+		frame.dataset.diagramLabel = diagramLabel || "mermaid";
+	}
+	diagram.classList.toggle("is-build-comparison", isBuildComparison);
+	frame?.classList.toggle("is-build-comparison", isBuildComparison);
 	const id = `mermaid-${Date.now()}-${renderId++}`;
 
 	try {

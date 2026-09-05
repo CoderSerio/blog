@@ -1,5 +1,5 @@
 ---
-title: "Feopack Loaders: From Text Files to Virtual Modules"
+title: "Feopack: From Text Files to Virtual Modules"
 published: 2026-09-02
 description: "How Feopack's first text transform grew into a loader pipeline with rules, chained transforms, resource queries, virtual modules, and inline requests."
 image: ''
@@ -16,6 +16,17 @@ In the previous post, Feopack learned the basic rhythm of a bundler: `make`, `se
 It could start from a JavaScript entry, follow its imports, build a module graph, turn that graph into a chunk, and finally emit a bundle. That was enough to prove the main path worked.
 
 It also had one rather important limitation: every source file had to be JavaScript.
+
+:::commit-trail{title="Implementation trail · 8 commits"}
+- [`b34aaad`](https://github.com/atom-universe/feopack/commit/b34aaad2c967ee6f4a673ea2bb8acbfbdc2497c4) — introduce loader rules, a registry, and a text loader
+- [`c805801`](https://github.com/atom-universe/feopack/commit/c8058015d9ed9944bcaaab47f0bae95720d16fc6) — prove the first built-in Rust loader
+- [`572b077`](https://github.com/atom-universe/feopack/commit/572b07779757abb0b6e855c3be4966819c2dbf04) — parse the first Meow file format
+- [`51f6d2f`](https://github.com/atom-universe/feopack/commit/51f6d2fcca31c4e61ae3e847cdf7a7d3037452b5) — add a separate TypeScript loader
+- [`62fb00d`](https://github.com/atom-universe/feopack/commit/62fb00dd4e049ad054b52c8be1127a0aca6aec96) — separate module identity from its resource path
+- [`c3f1e6a`](https://github.com/atom-universe/feopack/commit/c3f1e6a4232c85371e44a52a585c93d0e0c4e23a) — make virtual module requests buildable
+- [`7339aaa`](https://github.com/atom-universe/feopack/commit/7339aaaaf4467a6174c28c20ebe42ce5e532b5c8) — extend virtual blocks to styles
+- [`8977f1d`](https://github.com/atom-universe/feopack/commit/8977f1d96394623b836dc260ef5a3072870be14f) — support inline loader requests
+:::
 
 ```js
 import message from "./message.txt";
@@ -81,9 +92,7 @@ flowchart LR
   style Loader fill:#eef2ff,stroke:#8b5cf6,stroke-width:2px,color:#1f2937
 ```
 
-This small case proved something important: loaders belong inside module building. They run after Feopack knows which resource it wants, but before the transformed source is parsed as a module.
-
-The first implementation landed in `b34aaad` and became a working playground case in `c805801`.
+The first two loader commits made that path concrete. [`b34aaad`](https://github.com/atom-universe/feopack/commit/b34aaad2c967ee6f4a673ea2bb8acbfbdc2497c4) introduced the registry and text transform; [`c805801`](https://github.com/atom-universe/feopack/commit/c8058015d9ed9944bcaaab47f0bae95720d16fc6) proved it in a runnable playground case. Together they showed that loaders belong inside module building: after Feopack knows which resource it wants, but before the transformed source is parsed as a module.
 
 ## 2. One Function Is Not Yet a Loader System
 
@@ -201,9 +210,7 @@ The template and script were both owned by one function. If I added a style bloc
 
 Around the same time, Feopack gained a separate `typescript-loader`. That made the awkwardness easier to see. I already had a loader that knew how to transform TypeScript, but `meow-loader-v1` could not reuse it for the content inside `<script lang="ts">`.
 
-Meow v1 was a tiny compiler hiding inside a single loader. The next version needed to take that compiler apart.
-
-> Project checkpoint: `572b077` contains `meow-loader-v1`, and `51f6d2f` adds the TypeScript loader used by the next experiment.
+[`572b077`](https://github.com/atom-universe/feopack/commit/572b07779757abb0b6e855c3be4966819c2dbf04) added that first Meow compiler. The separate TypeScript loader in [`51f6d2f`](https://github.com/atom-universe/feopack/commit/51f6d2fcca31c4e61ae3e847cdf7a7d3037452b5) then exposed why one all-knowing transform would not scale. Meow v1 was a tiny compiler hiding inside a single loader; the next version needed to take that compiler apart.
 
 ## 4. One File, Several Jobs
 
@@ -295,7 +302,11 @@ flowchart LR
   Resolve --> Query["【Resource Query】<br/>?type=script&lang=ts"]
 ```
 
-The richer resolved value appeared in `62fb00d`, and the following virtual-request work made the query part of `module_id` as well. It looked like a small data-structure refactor, but it changed the meaning of a module inside Feopack. A module was no longer required to map one-to-one to a file.
+> **Commit [`62fb00d`](https://github.com/atom-universe/feopack/commit/62fb00dd4e049ad054b52c8be1127a0aca6aec96) — Introduce a richer resolved module**
+>
+> Separate resource path, resource query, and module identity before virtual requests depend on the distinction.
+
+The following virtual-request work made the query part of `module_id` as well. It looked like a small data-structure refactor, but it changed the meaning of a module inside Feopack. A module was no longer required to map one-to-one to a file.
 
 Now the loader could finally split one resource into child requests.
 
@@ -331,7 +342,11 @@ The loader output did not only contain JavaScript anymore. It contained new impo
 
 This was the part that made virtual requests click for me. A loader can transform one module into JavaScript that asks the bundler to build more modules. Those modules may come from the same physical file while representing completely different logical pieces.
 
-The first working virtual requests arrived in `c3f1e6a`. Style blocks and the `scoped` query followed in `7339aaa`, which proved that the model could grow beyond the original template-and-script demo.
+> **Commits [`c3f1e6a`](https://github.com/atom-universe/feopack/commit/c3f1e6a4232c85371e44a52a585c93d0e0c4e23a) and [`7339aaa`](https://github.com/atom-universe/feopack/commit/7339aaaaf4467a6174c28c20ebe42ce5e532b5c8) — Make virtual requests real**
+>
+> Build template and script children from one file, then extend the same identity model to style blocks and scoped selectors.
+
+That second case proved that the model could grow beyond the original template-and-script demo.
 
 It also revealed the next problem.
 
@@ -430,7 +445,7 @@ flowchart LR
   Run --> Module["【JavaScript Module】"]
 ```
 
-This version landed in `8977f1d`.
+[`8977f1d`](https://github.com/atom-universe/feopack/commit/8977f1d96394623b836dc260ef5a3072870be14f) let generated imports carry an exact loader recipe instead of asking the global rule table to reconstruct it.
 
 It removed the need for a giant query-to-loader table. Each generated virtual request carried the exact processing recipe for that block. The main loader no longer had to ask a distant registry to rediscover what it already knew.
 

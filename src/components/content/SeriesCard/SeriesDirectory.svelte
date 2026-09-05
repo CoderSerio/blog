@@ -49,10 +49,9 @@ onMount(async () => {
 			posts = cachedPosts;
 			loaded = true;
 			loading = false;
-			return;
 		}
 
-		const response = await fetch(dataUrl);
+		const response = await fetch(dataUrl, { cache: "no-store" });
 		if (!response.ok) return;
 
 		const data = await response.json();
@@ -60,7 +59,7 @@ onMount(async () => {
 		writeCachedPosts(dataUrl, posts);
 		loaded = true;
 	} catch {
-		loaded = false;
+		loaded = posts.length > 0;
 	} finally {
 		loading = false;
 	}
