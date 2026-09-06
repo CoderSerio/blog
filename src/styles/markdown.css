@@ -133,6 +133,23 @@
         content: "architecture · webpack ↔ rspack";
     }
 
+    .mermaid-pixel-frame.is-editorial {
+        border-color: color-mix(in oklch, var(--primary) 72%, #06b6d4);
+        box-shadow: 6px 6px 0 color-mix(in oklch, var(--primary) 72%, #06b6d4);
+        background-image:
+            radial-gradient(circle at 92% 10%, color-mix(in oklch, #06b6d4 9%, transparent), transparent 28%),
+            linear-gradient(color-mix(in oklch, var(--primary) 11%, transparent) 1px, transparent 1px),
+            linear-gradient(90deg, color-mix(in oklch, var(--primary) 11%, transparent) 1px, transparent 1px);
+        background-size: auto, 16px 16px, 16px 16px;
+    }
+
+    .mermaid-pixel-frame.is-plain {
+        @apply px-4 pb-4 pt-9;
+        border-color: color-mix(in oklch, var(--primary) 48%, var(--line-divider));
+        box-shadow: 3px 3px 0 color-mix(in oklch, var(--primary) 38%, transparent);
+        background-image: none;
+    }
+
     .mermaid-preview-button {
         @apply absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center border-2 border-[var(--primary)] bg-[var(--card-bg)] text-sm font-bold leading-none text-[var(--primary)] shadow-[3px_3px_0_var(--primary)] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--primary)] active:translate-y-0 active:shadow-[2px_2px_0_var(--primary)];
         font-family: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
@@ -162,7 +179,45 @@
         font-family: inherit !important;
     }
 
+    .mermaid-diagram.is-plain {
+        @apply min-w-0 py-2;
+    }
+
+    .mermaid-diagram.is-plain svg {
+        @apply max-w-[52rem];
+    }
+
+    .mermaid-diagram.is-plain.is-wide svg {
+        @apply max-w-none;
+    }
+
+    .mermaid-diagram.is-plain .node :is(rect, circle, ellipse, polygon, path),
+    .mermaid-diagram.is-plain .cluster rect {
+        filter: none !important;
+        stroke-width: 1.5px !important;
+    }
+
+    .mermaid-diagram.is-plain .nodeLabel,
+    .mermaid-diagram.is-plain .cluster-label,
+    .mermaid-diagram.is-plain .edgeLabel {
+        font-size: 15px !important;
+        font-weight: 600 !important;
+    }
+
+    .mermaid-diagram.is-plain .node.stale > :is(rect, polygon, path) {
+        stroke: #f43f5e !important;
+        stroke-width: 2px !important;
+    }
+
     @media (max-width: 640px) {
+        .mermaid-diagram.is-plain {
+            @apply min-w-[46rem];
+        }
+
+        .mermaid-diagram.is-plain svg {
+            @apply max-w-[46rem];
+        }
+
         .mermaid-diagram.is-wide {
             @apply min-w-[64rem];
         }
@@ -180,8 +235,128 @@
     .mermaid-diagram .node circle,
     .mermaid-diagram .node ellipse,
     .mermaid-diagram .node polygon,
-    .mermaid-diagram .node path {
+    .mermaid-diagram .node path,
+    .mermaid-diagram .rough-node > g:first-child > path {
         filter: drop-shadow(2px 2px 0 color-mix(in oklch, var(--primary) 35%, transparent));
+    }
+
+    .mermaid-diagram.is-editorial {
+        @apply py-3;
+    }
+
+    .mermaid-diagram.is-editorial .node rect,
+    .mermaid-diagram.is-editorial .node circle,
+    .mermaid-diagram.is-editorial .node ellipse,
+    .mermaid-diagram.is-editorial .node polygon,
+    .mermaid-diagram.is-editorial .node path,
+    .mermaid-diagram.is-editorial .rough-node > g:first-child > path {
+        stroke-width: 2px !important;
+        filter: drop-shadow(3px 3px 0 color-mix(in oklch, var(--primary) 25%, transparent));
+    }
+
+    .mermaid-diagram.is-editorial .node rect {
+        rx: 8px;
+        ry: 8px;
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).discovery {
+        --mermaid-node-accent: #06b6d4;
+        --mermaid-node-fill: color-mix(in oklch, #06b6d4 13%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).source {
+        --mermaid-node-accent: var(--primary);
+        --mermaid-node-fill: color-mix(in oklch, var(--primary) 14%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).observer {
+        --mermaid-node-accent: #22c55e;
+        --mermaid-node-fill: color-mix(in oklch, #22c55e 12%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).event {
+        --mermaid-node-accent: #f59e0b;
+        --mermaid-node-fill: color-mix(in oklch, #f59e0b 14%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).decision {
+        --mermaid-node-accent: #a78bfa;
+        --mermaid-node-fill: color-mix(in oklch, #a78bfa 13%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).success {
+        --mermaid-node-accent: #22c55e;
+        --mermaid-node-fill: color-mix(in oklch, #22c55e 15%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).stale {
+        --mermaid-node-accent: #f43f5e;
+        --mermaid-node-fill: color-mix(in oklch, #f43f5e 13%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial :is(.node, .rough-node).boundary {
+        --mermaid-node-accent: #f97316;
+        --mermaid-node-fill: color-mix(in oklch, #f97316 12%, var(--card-bg));
+    }
+
+    .mermaid-diagram.is-editorial .node:is(.source, .discovery, .observer, .event, .decision, .success, .stale, .boundary) > :is(rect, circle, ellipse, polygon, path) {
+        fill: var(--mermaid-node-fill) !important;
+        stroke: var(--mermaid-node-accent) !important;
+    }
+
+    .mermaid-diagram.is-editorial .rough-node:is(.source, .discovery, .observer, .event, .decision, .success, .stale, .boundary) > g:first-child > path:first-of-type {
+        fill: var(--mermaid-node-fill) !important;
+    }
+
+    .mermaid-diagram.is-editorial .rough-node:is(.source, .discovery, .observer, .event, .decision, .success, .stale, .boundary) > g:first-child > path {
+        stroke: var(--mermaid-node-accent) !important;
+    }
+
+    .mermaid-diagram.is-editorial .node.decision > polygon,
+    .mermaid-diagram.is-editorial .node:is(.stale, .boundary) > :is(rect, polygon),
+    .mermaid-diagram.is-editorial .rough-node:is(.decision, .stale, .boundary) > g:first-child > path {
+        stroke-width: 3px !important;
+    }
+
+    .mermaid-diagram.is-editorial .node:is(.stale, .boundary) > :is(rect, polygon),
+    .mermaid-diagram.is-editorial .rough-node:is(.stale, .boundary) > g:first-child > path {
+        stroke-dasharray: 7 4;
+    }
+
+    .mermaid-diagram.is-editorial .nodeLabel,
+    .mermaid-diagram.is-editorial .edgeLabel,
+    .mermaid-diagram.is-editorial .messageText,
+    .mermaid-diagram.is-editorial .noteText {
+        @apply font-semibold;
+    }
+
+    .mermaid-diagram.is-editorial .edgeLabel rect,
+    .mermaid-diagram.is-editorial .labelBkg {
+        fill: var(--card-bg) !important;
+        opacity: 0.94 !important;
+    }
+
+    .mermaid-diagram.is-editorial .actor {
+        fill: color-mix(in oklch, var(--primary) 10%, var(--card-bg)) !important;
+        stroke: var(--primary) !important;
+        stroke-width: 2px !important;
+        filter: drop-shadow(3px 3px 0 color-mix(in oklch, var(--primary) 24%, transparent));
+    }
+
+    .mermaid-diagram.is-editorial .actor-line {
+        stroke: color-mix(in oklch, var(--primary) 58%, var(--tw-prose-body)) !important;
+        stroke-dasharray: 5 5;
+    }
+
+    .mermaid-diagram.is-editorial .messageLine0,
+    .mermaid-diagram.is-editorial .messageLine1 {
+        stroke-width: 2px !important;
+    }
+
+    .mermaid-diagram.is-editorial .note {
+        fill: color-mix(in oklch, #f59e0b 12%, var(--card-bg)) !important;
+        stroke: #f59e0b !important;
+        stroke-width: 2px !important;
     }
 
     .mermaid-diagram.is-build-comparison {

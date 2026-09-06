@@ -5,6 +5,8 @@ let mermaidObserver: IntersectionObserver | null = null;
 
 const mermaidRootMargin = "720px 0px";
 const mermaidWideMarker = /^%%\s*wide\s*%%(?:\r?\n|$)/;
+const mermaidPlainMarker = /^%%\s*plain\s*%%(?:\r?\n|$)/m;
+const mermaidEditorialMarker = /^%%\s*editorial\s*%%(?:\r?\n|$)/m;
 const mermaidBuildComparisonMarker =
 	/^%%\s*build-comparison\s*%%(?:\r?\n|$)/m;
 const mermaidLabelMarker = /^%%\s*label:\s*(.+?)\s*%%(?:\r?\n|$)/m;
@@ -121,6 +123,8 @@ async function renderMermaidDiagram(diagram: HTMLElement) {
 
 	const source = decodeURIComponent(diagram.dataset.mermaid ?? "");
 	diagram.classList.toggle("is-wide", mermaidWideMarker.test(source));
+	const isPlain = mermaidPlainMarker.test(source);
+	const isEditorial = mermaidEditorialMarker.test(source);
 	const isBuildComparison = mermaidBuildComparisonMarker.test(source);
 	const diagramLabel = source.match(mermaidLabelMarker)?.[1]?.trim();
 	const frame = diagram.closest<HTMLElement>(".mermaid-pixel-frame");
@@ -129,6 +133,10 @@ async function renderMermaidDiagram(diagram: HTMLElement) {
 	}
 	diagram.classList.toggle("is-build-comparison", isBuildComparison);
 	frame?.classList.toggle("is-build-comparison", isBuildComparison);
+	diagram.classList.toggle("is-editorial", isEditorial);
+	frame?.classList.toggle("is-editorial", isEditorial);
+	diagram.classList.toggle("is-plain", isPlain);
+	frame?.classList.toggle("is-plain", isPlain);
 	const id = `mermaid-${Date.now()}-${renderId++}`;
 
 	try {

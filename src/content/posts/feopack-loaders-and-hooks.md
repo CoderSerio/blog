@@ -15,7 +15,7 @@ In the previous post, Feopack's loader system finally crossed the boundary betwe
 
 A module could move through one ordered loader chain even when some steps ran in Rust and others ran in Node.js. That solved one kind of extensibility: outside code could participate in transforming a module.
 
-:::commit-trail{title="Implementation trail · 13 commits"}
+:::commit-trail{title="Implementation trail · 12 commits"}
 - [`3a4cafe`](https://github.com/atom-universe/feopack/commit/3a4cafe964ed09ae714ed15444fd480e1ee4fd5f) — make the compiler lifecycle visible
 - [`22b30fc`](https://github.com/atom-universe/feopack/commit/22b30fc5cd46fd6fcaa4056a385e15c66bda9001) — separate asset emission from compilation
 - [`6daf8ae`](https://github.com/atom-universe/feopack/commit/6daf8aedeffd17bc2d2094ebb2fd7f8e9fed1ae1) — scaffold compiler hooks
@@ -28,7 +28,6 @@ A module could move through one ordered loader chain even when some steps ran in
 - [`7eac41e`](https://github.com/atom-universe/feopack/commit/7eac41e2ad26f1506bfa17e589ec85ffc329158e) — support minimal JavaScript compiler plugins
 - [`45b3d5e`](https://github.com/atom-universe/feopack/commit/45b3d5e6b02c1ed6e2e0a9598c70ed020ed659df) — remove the lifecycle-wrapper abstraction
 - [`a01dfaf`](https://github.com/atom-universe/feopack/commit/a01dfafbfba8b9a3c1052012f485ab82ba8b207d) — align hook timing with the runtime that owns each phase
-- [`4d68877`](https://github.com/atom-universe/feopack/commit/4d68877c2570d49eddafa45cd1dfa87753ecc77c) — put the lifecycle under file-watching pressure
 :::
 
 It did not solve the larger problem.
@@ -609,6 +608,6 @@ The resulting system remained intentionally incomplete:
 
 Those limits were not hidden. They marked the edge of the experiment.
 
-The next feature, basic file watching in [`4d68877`](https://github.com/atom-universe/feopack/commit/4d68877c2570d49eddafa45cd1dfa87753ecc77c), immediately put the new lifecycle boundary under pressure: who owns repeated compilations, which hooks belong to a watch cycle, and what happens when a file changes while a build is already running?
+The next feature, [basic file watching](/posts/feopack-watch-mode/), immediately put the new lifecycle boundary under pressure: who owns repeated compilations, which hooks belong to a watch cycle, and what happens when a file changes while a build is already running?
 
 Apparently, once a compiler learns to accept visitors, someone eventually asks it to stay awake.
