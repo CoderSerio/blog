@@ -7,7 +7,7 @@ import SeriesCard from "@components/content/SeriesCard/index.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { getSortedPosts } from "@utils/content-utils";
+import { getPostsBySlugs, getSortedPosts } from "@utils/content-utils";
 import { getDir, getPostUrlBySlug } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import { licenseConfig } from "src/config";
@@ -30,6 +30,23 @@ const { Content, headings } = await entry.render();
 
 const { remarkPluginFrontmatter } = await entry.render();
 const seriesInfo = getSeriesForPost(entry.slug);
+const seriesPosts = seriesInfo ? await getPostsBySlugs(seriesInfo.posts) : [];
+const seriesPostIndex = seriesPosts.findIndex(
+	(post) => post.slug === entry.slug,
+);
+
+// Series navigation follows the authored chapter order. Standalone posts keep
+// the site's existing publication-date navigation.
+const previousPost = seriesInfo
+	? seriesPosts[seriesPostIndex - 1]
+	: entry.data.nextSlug
+		? { slug: entry.data.nextSlug, data: { title: entry.data.nextTitle } }
+		: undefined;
+const nextPost = seriesInfo
+	? seriesPosts[seriesPostIndex + 1]
+	: entry.data.prevSlug
+		? { slug: entry.data.prevSlug, data: { title: entry.data.prevTitle } }
+		: undefined;
 
 const jsonLd = {
 	"@context": "https://schema.org",
@@ -121,21 +138,23 @@ const jsonLd = {
     </div>
 
     <div class="flex flex-col md:flex-row justify-between mb-4 gap-4 overflow-hidden w-full">
-        <a href={entry.data.nextSlug ? getPostUrlBySlug(entry.data.nextSlug) : "#"}
-           class:list={["w-full font-bold overflow-hidden active:scale-95", {"pointer-events-none": !entry.data.nextSlug}]}>
-            {entry.data.nextSlug && <div class="btn-card rounded-2xl w-full h-[3.75rem] max-w-full px-4 flex items-center !justify-start gap-4" >
+        <a href={previousPost ? getPostUrlBySlug(previousPost.slug) : "#"}
+           rel={previousPost ? "prev" : undefined}
+           class:list={["w-full font-bold overflow-hidden active:scale-95", {"pointer-events-none": !previousPost}]}>
+            {previousPost && <div class="btn-card rounded-2xl w-full h-[3.75rem] max-w-full px-4 flex items-center !justify-start gap-4" >
                 <Icon name="material-symbols:chevron-left-rounded" class="text-[2rem] text-[var(--primary)]" />
                 <div class="overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)] text-black/75 dark:text-white/75">
-                    {entry.data.nextTitle}
+                    {previousPost.data.title}
                 </div>
             </div>}
         </a>
 
-        <a href={entry.data.prevSlug ? getPostUrlBySlug(entry.data.prevSlug) : "#"}
-           class:list={["w-full font-bold overflow-hidden active:scale-95", {"pointer-events-none": !entry.data.prevSlug}]}>
-            {entry.data.prevSlug && <div class="btn-card rounded-2xl w-full h-[3.75rem] max-w-full px-4 flex items-center !justify-end gap-4">
+        <a href={nextPost ? getPostUrlBySlug(nextPost.slug) : "#"}
+           rel={nextPost ? "next" : undefined}
+           class:list={["w-full font-bold overflow-hidden active:scale-95", {"pointer-events-none": !nextPost}]}>
+            {nextPost && <div class="btn-card rounded-2xl w-full h-[3.75rem] max-w-full px-4 flex items-center !justify-end gap-4">
                 <div class="overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)] text-black/75 dark:text-white/75">
-                    {entry.data.prevTitle}
+                    {nextPost.data.title}
                 </div>
                 <Icon name="material-symbols:chevron-right-rounded" class="text-[2rem] text-[var(--primary)]" />
             </div>}

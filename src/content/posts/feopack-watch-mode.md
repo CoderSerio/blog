@@ -386,4 +386,4 @@ That left the next question sitting rather conspicuously inside `compiler.modifi
 
 > If the compiler already knows what changed, why does it still repeat every piece of work?
 
-That is where watch mode ends and incremental compilation begins.
+That is where watch mode ends and [incremental compilation begins](/posts/feopack-incremental-builds/).

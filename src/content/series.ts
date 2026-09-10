@@ -26,6 +26,8 @@ export const series: Record<string, SeriesConfig> = {
 			"loaders-of-rspack",
 			"feopack-pitch-and-js-loaders",
 			"feopack-loaders-and-hooks",
+			"feopack-watch-mode",
+			"feopack-incremental-builds",
 		],
 	},
 };
