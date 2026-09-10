@@ -206,10 +206,14 @@ This matters for deletion in two different senses. If an imported file disappear
 
 The test fixture made the boundary visible with four modules:
 
-```text
-entry.js -> feature.js -> leaf.js
-    |
-    +----> stable.js
+```mermaid
+%% plain %%
+%% label: Feopack · which branch survives a leaf change %%
+%%{init: {"look": "classic"}}%%
+flowchart LR
+  Entry["entry.js<br/>rebuilt"] --> Feature["feature.js<br/>rebuilt"]
+  Feature --> Leaf["leaf.js<br/>changed and rebuilt"]
+  Entry --> Stable["stable.js<br/>reused"]
 ```
 
 After changing `leaf.js`, the rebuild reported:
@@ -271,34 +275,24 @@ The implementation is useful, but its trust model is narrow.
 
 These are not decorative TODOs. Each missing input is another way a cached result could become false while the compiler continued to trust it.
 
-The teaching version stops here because the central mechanism is now visible:
+The danger of such a list is that it can make the missing pieces sound like routine polish. They are not. Context dependencies change what the watcher can observe. Loader dependencies change which inputs belong to a module. Incremental `seal` requires a mutation model for chunks and assets. Each addition would widen the set of results Feopack could safely preserve.
 
-1. Translate physical changes into logical modules.
-2. Expand uncertainty through the graph.
-3. Remove results we no longer trust.
-4. Walk from the entry and rebuild the holes.
-5. Reuse everything that survives both invalidation and reachability.
+I stopped at incremental `make` because it was the first boundary the project could explain honestly. Extending the cache before extending that explanation would make the compiler faster at believing stale information.
 
-A production implementation needs more kinds of evidence. It does not need a different definition of correctness.
+## 9. What had Feopack learned to remember?
 
-## 9. What became incremental?
+Watch mode made the compiler repeat itself. Incremental `make` forced it to remember.
 
-Watch mode had already answered a question about time:
+Before this commit, every new `Compilation` was a clean slate. Afterwards, a fresh lifecycle could carry an old module graph forward, remove the parts invalidated by physical changes, and reuse a branch that remained both unaffected and reachable.
 
-> When should the compiler run again?
+That changed how I understood the feature. I had been treating incremental compilation as a cache: if the file looked the same, keep the old result. The implementation turned that shortcut into an argument. A module could survive only when its resource was unchanged, no invalidated dependency reached it, and the new entry walk could still reach it.
 
-This commit answered a narrower question about trust:
+The argument is still conservative and incomplete, but at least it can be challenged. What about a loader reading a second file? What about a plugin consulting an environment variable? What about a change that leaves the generated module identical? Those questions now have somewhere to attach.
 
-> Which completed module results may cross from one compilation into the next?
-
-The answer required bringing resource paths back without confusing them with module identities, recording reverse edges that ordinary forward builds did not need, separating durable artifacts from transient caches, and pruning state that was no longer reachable.
-
-That is more machinery than “skip unchanged files,” but it is also a more reusable mental model. Incremental systems are not defined by the amount of data they keep. They are defined by the quality of the reasons they have for keeping it.
-
-The compiler can now decide what became invalid on the server side.
-
-The next question moves to the browser:
+And then a rather tempting thought appears: if the compiler can rebuild only part of the graph, is HMR nearly finished?
 
 > Can it replace only that code without throwing away the whole page?
 
-That is where incremental compilation begins to look like HMR—and where “rebuild less” stops being the same problem as “preserve runtime state.”
+Not quite. The server can remove a module record and build a new one because its graph is only data. The browser has already executed the old module. It may have registered listeners, created timers, mutated state, or handed values to importers. Replacing its code requires another validity model: who accepts the update, what must be disposed, and when should the runtime give up and reload the page?
+
+That is the next experiment. Apparently, once a compiler learns what to remember, the next challenge is teaching the runtime what it is allowed to forget.
