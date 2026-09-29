@@ -401,10 +401,6 @@
         stroke: color-mix(in oklch, var(--tw-prose-body) 45%, transparent) !important;
     }
 
-    .mermaid-diagram.is-build-comparison .cluster-label {
-        @apply font-bold tracking-wide;
-    }
-
     .mermaid-diagram.is-build-comparison .node rect {
         rx: 8px;
         ry: 8px;

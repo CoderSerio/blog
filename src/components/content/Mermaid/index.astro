@@ -1,9 +1,13 @@
 <script>
+import { createMermaidPreview } from "../../../utils/mermaid-preview";
+
 let renderId = 0;
 let mermaidPromise: Promise<any> | null = null;
 let mermaidObserver: IntersectionObserver | null = null;
 
 const mermaidRootMargin = "720px 0px";
+const mermaidFontFamily =
+	"'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
 const mermaidWideMarker = /^%%\s*wide\s*%%(?:\r?\n|$)/;
 const mermaidPlainMarker = /^%%\s*plain\s*%%(?:\r?\n|$)/m;
 const mermaidEditorialMarker = /^%%\s*editorial\s*%%(?:\r?\n|$)/m;
@@ -12,24 +16,26 @@ const mermaidBuildComparisonMarker =
 const mermaidLabelMarker = /^%%\s*label:\s*(.+?)\s*%%(?:\r?\n|$)/m;
 
 async function openMermaidPreview(diagram: HTMLElement) {
-	const svg = diagram.querySelector("svg");
+	let svg = diagram.querySelector("svg");
 
 	if (!(svg instanceof SVGSVGElement)) {
 		return;
 	}
 
 	const { default: PhotoSwipeLightbox } = await import("photoswipe/lightbox");
+	// Initial page/theme setup may replace the SVG while the module loads.
+	svg = diagram.querySelector("svg");
+	if (!(svg instanceof SVGSVGElement) || !svg.isConnected) return;
 	const pswpModule = () => import("photoswipe");
-	const source = new XMLSerializer().serializeToString(svg);
-	const src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`;
 	const box = svg.viewBox.baseVal;
 	const rect = svg.getBoundingClientRect();
 	const width = Math.ceil(box?.width || rect.width || window.innerWidth);
 	const height = Math.ceil(box?.height || rect.height || window.innerHeight);
+	const preview = createMermaidPreview(svg);
 	const lightbox = new PhotoSwipeLightbox({
 		dataSource: [
 			{
-				src,
+				type: "html",
 				w: width,
 				h: height,
 				alt: "Mermaid diagram preview",
@@ -45,6 +51,18 @@ async function openMermaidPreview(diagram: HTMLElement) {
 		doubleTapAction: "zoom",
 	});
 
+	lightbox.on("contentLoad", (event) => {
+		event.preventDefault();
+		const host = document.createElement("div");
+		host.className = "pswp__img";
+		host.setAttribute("role", "img");
+		host.setAttribute("aria-label", "Mermaid diagram preview");
+		// Keep page fonts available while isolating duplicate SVG IDs and styles.
+		host.attachShadow({ mode: "open" }).append(preview.cloneNode(true));
+		event.content.element = host;
+		event.content.onLoaded();
+	});
+	lightbox.addFilter("isContentZoomable", () => true);
 	lightbox.on("close", () => lightbox.destroy());
 	lightbox.init();
 	lightbox.loadAndOpen(0);
@@ -92,15 +110,23 @@ async function getMermaid() {
 	return mermaidPromise;
 }
 
-function initializeMermaid(mermaid: any) {
+function initializeMermaid(mermaid: any, isBuildComparison: boolean) {
 	mermaid.initialize({
 		startOnLoad: false,
 		securityLevel: "strict",
 		look: "handDrawn",
+		fontFamily: mermaidFontFamily,
+		// Include title typography during layout, before Mermaid measures labels.
+		themeCSS: isBuildComparison
+			? `.cluster-label { font-weight: 700; letter-spacing: 0.025em; }
+			   .cluster-label span p { background: var(--card-bg); padding: 2px 8px; border-radius: 4px; }`
+			: "",
+		...(isBuildComparison
+			? { flowchart: { subGraphTitleMargin: { top: 12, bottom: 20 } } }
+			: {}),
 		theme: isDarkMode() ? "dark" : "base",
 		themeVariables: {
-			fontFamily:
-				"'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+			fontFamily: mermaidFontFamily,
 			primaryColor: isDarkMode() ? "#1f2937" : "#f8fafc",
 			primaryTextColor: isDarkMode() ? "#f8fafc" : "#1f2937",
 			primaryBorderColor: "#8b5cf6",
@@ -141,9 +167,24 @@ async function renderMermaidDiagram(diagram: HTMLElement) {
 
 	try {
 		const mermaid = await getMermaid();
-		initializeMermaid(mermaid);
+		await document.fonts.ready;
+		initializeMermaid(mermaid, isBuildComparison);
 		const { svg, bindFunctions } = await mermaid.render(id, source);
 		diagram.innerHTML = svg;
+		if (isBuildComparison) {
+			const root = diagram.querySelector("svg");
+			const rootMatrix = root?.getScreenCTM();
+			if (root && rootMatrix) {
+				// Draw headings above edges while preserving their nested positions.
+				root.querySelectorAll<SVGGElement>(".cluster-label").forEach((label) => {
+					const matrix = label.getScreenCTM();
+					if (!matrix) return;
+					const local = rootMatrix.inverse().multiply(matrix);
+					label.setAttribute("transform", `matrix(${local.a} ${local.b} ${local.c} ${local.d} ${local.e} ${local.f})`);
+					root.append(label);
+				});
+			}
+		}
 		bindFunctions?.(diagram);
 		diagram.dataset.rendered = "true";
 		bindMermaidPreviewButton(diagram);
