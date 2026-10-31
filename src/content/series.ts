@@ -28,6 +28,7 @@ export const series: Record<string, SeriesConfig> = {
 			"feopack-loaders-and-hooks",
 			"feopack-watch-mode",
 			"feopack-incremental-builds",
+			"feopack-rolldown-code-splitting",
 		],
 	},
 };

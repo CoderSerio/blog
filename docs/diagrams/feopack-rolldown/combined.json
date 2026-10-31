@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Shared code inside an entry chunk",
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "hidden"
+    }
+  },
+  "components": [
+    {
+      "id": "page",
+      "type": "backend",
+      "label": "page-chunk.js",
+      "sublabel": "renderPage",
+      "pos": [
+        60,
+        60
+      ],
+      "size": [
+        260,
+        90
+      ]
+    },
+    {
+      "id": "form",
+      "type": "backend",
+      "label": "form-chunk.js",
+      "sublabel": "messages + renderForm",
+      "pos": [
+        560,
+        220
+      ],
+      "size": [
+        260,
+        90
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "page-to-form",
+      "from": "page",
+      "to": "form",
+      "label": "import { t as messages }"
+    }
+  ]
+}
