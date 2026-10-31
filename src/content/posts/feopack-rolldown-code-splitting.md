@@ -67,23 +67,26 @@ The application loads the form and page through separate dynamic imports.
 
 The first layout I imagined was a dedicated shared chunk. In these diagrams, arrows point from the consumer to the module or chunk it depends on:
 
-<figure>
-  <a href="/diagrams/feopack-rolldown/shared.svg" target="_blank" rel="noopener" title="Open full-size diagram">
-    <img src="/diagrams/feopack-rolldown/shared.svg" alt="Both consumers import messages from a dedicated shared chunk." loading="lazy" class="w-full rounded-xl [color-scheme:light] dark:[color-scheme:dark]" />
-  </a>
-  <figcaption>Both consumers import messages from a dedicated shared chunk.</figcaption>
-</figure>
+```mermaid
+%% plain %%
+%% label: Shared chunk %%
+%%{init: {"look": "classic"}}%%
+flowchart LR
+  Form["form-chunk.js<br/>renderForm"] -->|import messages| Shared["shared-chunk.js<br/>messages"]
+  Page["page-chunk.js<br/>renderPage"] -->|import messages| Shared
+```
 
 That arrangement is easy to follow. Both consumers import the shared value from a third output file.
 
 But "shared dependency" does not automatically mean "separate shared file." Another possible arrangement is:
 
-<figure>
-  <a href="/diagrams/feopack-rolldown/combined.svg" target="_blank" rel="noopener" title="Open full-size diagram">
-    <img src="/diagrams/feopack-rolldown/combined.svg" alt="The page chunk imports messages from the chunk that also contains the form." loading="lazy" class="w-full rounded-xl [color-scheme:light] dark:[color-scheme:dark]" />
-  </a>
-  <figcaption>The page chunk imports messages from the chunk that also contains the form.</figcaption>
-</figure>
+```mermaid
+%% plain %%
+%% label: Combined chunk %%
+%%{init: {"look": "classic"}}%%
+flowchart LR
+  Page["page-chunk.js<br/>renderPage"] -->|import t as messages| Form["form-chunk.js<br/>renderForm + messages"]
+```
 
 These are illustrative layouts, not a claim that the small example must produce either one under every configuration. The actual decision depends on the dependency graph and chunking rules.
 
@@ -153,12 +156,14 @@ The `export` makes the binding accessible from another chunk. The `import` acces
 
 This was where my Feopack comparison had been misleading me. Feopack already had a communication mechanism: its runtime looked up a module by ID and returned that module's exports. In this ESM output, native imports and exports connect the output files.
 
-<figure>
-  <a href="/diagrams/feopack-rolldown/communication.svg" target="_blank" rel="noopener" title="Open full-size diagram">
-    <img src="/diagrams/feopack-rolldown/communication.svg" alt="Feopack uses a module table; ESM output connects chunks through native imports." loading="lazy" class="w-full rounded-xl [color-scheme:light] dark:[color-scheme:dark]" />
-  </a>
-  <figcaption>Feopack uses a module table; ESM output connects chunks through native imports.</figcaption>
-</figure>
+```mermaid
+%% plain %%
+%% label: Module table vs ESM %%
+%%{init: {"look": "classic"}}%%
+flowchart LR
+  Feopack["Feopack consumer"] -->|"__feopack_import__(id)"| Runtime["Runtime module table<br/>Cached module.exports"]
+  Consumer["ESM chunk consumer"] -->|"import { t } from chunk"| Native["Native ESM module<br/>Live export binding"]
+```
 
 Both arrangements let consumers access a shared dependency. They preserve module boundaries in different ways.
 
@@ -230,12 +235,15 @@ export { renderForm } from './form-chunk.js';
 
 The application dynamically imports `form-entry.js`. Other chunks can still import internal bindings from `form-chunk.js`.
 
-<figure>
-  <a href="/diagrams/feopack-rolldown/facade.svg" target="_blank" rel="noopener" title="Open full-size diagram">
-    <img src="/diagrams/feopack-rolldown/facade.svg" alt="The application imports the public facade; the page chunk can still import the internal binding." loading="lazy" class="w-full rounded-xl [color-scheme:light] dark:[color-scheme:dark]" />
-  </a>
-  <figcaption>The application imports the public facade; the page chunk can still import the internal binding.</figcaption>
-</figure>
+```mermaid
+%% plain %%
+%% label: Entry facade %%
+%%{init: {"look": "classic"}}%%
+flowchart TB
+  App["Application"] -->|dynamic import| Entry["form-entry.js<br/>Public export: renderForm"]
+  Entry -->|re-export renderForm| Chunk["form-chunk.js<br/>Exports: renderForm + internal t"]
+  Page["page-chunk.js"] -->|import internal t| Chunk
+```
 
 That is the direction of the [patch I have been exploring](https://github.com/rolldown/rolldown/compare/main...CoderSerio:rolldown:fix/dynamic-import-namespace): reuse Rolldown's [existing entry-facade machinery](https://github.com/rolldown/rolldown/blob/2a53ec71548752402c3db1c0435cdd32fdf1131d/crates/rolldown/src/stages/generate_stage/entry_facades.rs) for affected dynamic entries. As of November 1, 2026, this is an experimental patch that has not landed upstream.
 
