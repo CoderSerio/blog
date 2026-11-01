@@ -95,29 +95,40 @@ That set was still deliberately incomplete. Production bundlers distinguish file
 
 That was enough for the teaching case. It was not enough to claim that every relevant filesystem change could be observed.
 
-## 2. Which runtime should stay awake?
+## 2. Who owns the watch loop?
 
 Feopack now knew what to watch. It still needed something to interact with the filesystem over time.
 
 I could have put a watcher in Rust. Instead, the JavaScript layer used [Watchpack](https://github.com/webpack/watchpack), the watcher library used in the webpack ecosystem. Watchpack normalizes lower-level watching behavior, accepts sets of files, directories, and missing paths, and can combine changes that happen close together into one `aggregated` event.
 
-This kept a useful ownership boundary:
+The responsibilities stayed on two sides of the native boundary:
+
+- **JavaScript:** Watchpack observes files and aggregates changes. `Watching` records the changed paths, schedules compilations, and runs the watch lifecycle hooks through the public `Compiler`.
+- **Rust:** the native `Compiler` creates a fresh `Compilation` for each build and performs the module graph, code generation, and asset emission work.
 
 ```mermaid
 %% plain %%
-%% label: Feopack · ownership in watch mode %%
+%% label: Watch loop ownership %%
 %%{init: {"look": "classic"}}%%
-flowchart LR
-  JavaScript["JavaScript runtime<br/>compiler.watch · scheduler<br/>Watchpack · lifecycle hooks"]
-  Boundary["NAPI boundary<br/>↓ build command<br/>↑ file dependencies"]
-  Rust["Rust runtime<br/>Compiler · fresh Compilation<br/>module graph build"]
-
-  JavaScript <--> Boundary <--> Rust
+flowchart TB
+  subgraph JS["JavaScript / Node.js"]
+    Watchpack["Watchpack<br/>Observe files"]
+    Scheduler["Watching + JS Compiler<br/>Schedule builds and run hooks"]
+    Watchpack -->|aggregated changes| Scheduler
+    Scheduler -->|update watched paths| Watchpack
+  end
+  subgraph Native["Rust"]
+    Compiler["Native Compiler<br/>Fresh Compilation per build"]
+  end
+  Scheduler -->|"NAPI: build()"| Compiler
+  Compiler -.->|"NAPI: dependency paths"| Scheduler
 ```
 
-Rust still performed the expensive compiler work. JavaScript owned the long-lived public API, plugin hooks, callbacks, and the watcher already designed for Node.js tooling.
+NAPI is the connection between these sides, not a third scheduler. The JavaScript `Compiler` calls the native `build()` method. After the build, JavaScript reads the collected paths through `getFileDependencies()` and gives them to Watchpack.
 
-This was not an argument that watchers must always live in JavaScript. It was a smaller decision: Feopack already had an ecosystem-shaped JavaScript shell, so keeping watch orchestration there avoided creating a second long-lived control plane across the native boundary.
+Both compiler objects survive across watch cycles. The watcher and scheduling state live in JavaScript; each build still gets a fresh `Compilation`.
+
+This was a practical choice for Feopack: the public API, plugin hooks, and callbacks already lived in JavaScript, and Watchpack fit that Node.js layer. Rust continued to do the compiler work.
 
 ## 3. Is every filesystem event a rebuild?
 
@@ -202,9 +213,10 @@ flowchart LR
   Running -- No --> Build[Start a compilation]
   Running -- Yes --> Mark[Mark current build invalid]
   Build --> Changed{Invalidated while building?}
-  Changed -- No --> Publish[Publish stats and output]
-  Changed -- Yes --> Discard[Do not publish this result]
-  Mark --> Discard
+  Changed -- No --> Publish[Call done and the user callback]
+  Changed -- Yes --> Discard[Skip done and the user callback]
+  Mark --> Wait[Wait for the current compilation]
+  Wait --> Changed
   Discard --> Rebuild[Start the next compilation]
 
   class Mark,Discard stale
@@ -310,7 +322,8 @@ sequenceDiagram
   Note over Test,Compiler: 1 · Initial build
   Test->>Watching: compiler.watch()
   activate Watching
-  Watching->>Compiler: watchRun + compile
+  Watching->>Watching: watchRun hook in JavaScript
+  Watching->>Compiler: native build through JS Compiler
   activate Compiler
   Compiler-->>Watching: bundle with watch-v1
   deactivate Compiler
@@ -323,7 +336,8 @@ sequenceDiagram
 
   Note over Watching,Compiler: 3 · Serial rebuild
   activate Watching
-  Watching->>Compiler: watchRun + compile
+  Watching->>Watching: watchRun hook in JavaScript
+  Watching->>Compiler: native build through JS Compiler
   activate Compiler
   Compiler-->>Watching: bundle with watch-v2
   deactivate Compiler
@@ -358,32 +372,14 @@ None of those limitations invalidated the experiment. They defined its result mo
 
 Feopack had built a small scheduler around repeated full compilations. It had not yet built a robust watch service, a cancellation system, or an incremental compiler.
 
-## 9. What changed when the compiler stayed awake?
+## 9. From watch mode to incremental builds
 
-The original idea fit in two lines:
+The limitations above point to the next step. The watch loop can decide **when to build again**, but it still calls a compiler that starts its work from scratch.
 
-```text
-observe a change
-build again
-```
+To make the next build do less work, `modifiedFiles` needs to become more than information recorded by the scheduler. The compiler must use those paths to identify affected modules and decide which previous results it can reuse.
 
-The finished mental model needed more nouns:
+That gives the next chapter a concrete starting point:
 
-- a dependency set discovered by the previous compilation;
-- a watcher that can aggregate noisy filesystem events;
-- an invalidation signal for the old result;
-- changed and removed file sets for the next build;
-- a serial scheduler that prevents overlapping compilations;
-- a rule for suppressing results that are already obsolete;
-- lifecycle hooks that distinguish one-off execution from a watch cycle;
-- a close operation that ends the long-lived relationship.
+> We know which files changed. Which modules must be rebuilt, and which can we keep?
 
-The code was still small because Watchpack and the existing compiler lifecycle carried much of the machinery. The design question was not small. A one-off compiler only needs to be correct for one set of inputs. A watching compiler must also remain correct while those inputs move underneath it.
-
-And after all that, Feopack still rebuilt everything.
-
-That left the next question sitting rather conspicuously inside `compiler.modifiedFiles`:
-
-> If the compiler already knows what changed, why does it still repeat every piece of work?
-
-That is where watch mode ends and [incremental compilation begins](/posts/feopack-incremental-builds/).
+The watch loop provides the trigger. [Incremental compilation](/posts/feopack-incremental-builds/) will decide what work that trigger actually requires.
