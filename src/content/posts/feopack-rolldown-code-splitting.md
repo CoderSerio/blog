@@ -15,7 +15,9 @@ But recently, while reading bundler implementations and looking for opportunitie
 
 That gave me a reason to bring this chapter forward. Before thinking about a fix, I needed to understand why the bundler had generated that export in the first place.
 
-In [the previous chapter](/posts/feopack-incremental-builds/), incremental `make` reached a small but useful milestone: Feopack could invalidate affected modules, rebuild them, and reuse an unaffected part of the module graph. `seal()` still ran from scratch, and the chapter ended by looking ahead to HMR.
+In [the previous chapter](/posts/feopack-incremental-builds/), incremental `make` reached a small but useful milestone: Feopack could invalidate affected modules, rebuild them, and reuse an unaffected part of the module graph.
+
+`seal()` still ran from scratch, and the chapter ended by looking ahead to HMR.
 
 This time, I want to return to `seal()` instead.
 
@@ -30,7 +32,9 @@ let chunk = Chunk {
 };
 ```
 
-Every discovered module went into `main`. The runtime then gave each module its own exports object and let other modules access it through `__feopack_import__(moduleId)`. That remains the basic arrangement in [Feopack's chunk construction](https://github.com/atom-universe/feopack/blob/main/crates/feopack-core/src/compiler/compilation/seal/chunk_graph.rs).
+Every discovered module went into `main`. The runtime then gave each module its own exports object and let other modules access it through `__feopack_import__(moduleId)`.
+
+That remains the basic arrangement in [Feopack's chunk construction](https://github.com/atom-universe/feopack/blob/main/crates/feopack-core/src/compiler/compilation/seal/chunk_graph.rs).
 
 Several modules could already share a dependency. So why would another bundler need to generate this?
 
@@ -65,30 +69,86 @@ export function renderPage() {
 
 The application loads the form and page through separate dynamic imports.
 
-The first layout I imagined was a dedicated shared chunk. In these diagrams, arrows point from the consumer to the module or chunk it depends on:
+The first layout I imagined was a dedicated shared chunk. Instead of drawing the connections, let's write out the files the browser would load.
 
-```mermaid
-%% plain %%
-%% label: Shared chunk %%
-%%{init: {"look": "classic"}}%%
-flowchart LR
-  Form["form-chunk.js<br/>renderForm"] -->|import messages| Shared["shared-chunk.js<br/>messages"]
-  Page["page-chunk.js<br/>renderPage"] -->|import messages| Shared
+These are simplified output examples, with readable filenames. They illustrate two possible layouts rather than the exact output of a particular configuration.
+
+**Layout 1: put the shared value in its own file**
+
+```js
+// shared-chunk.js
+const messages = { title: 'Hello' };
+
+export { messages };
 ```
 
-That arrangement is easy to follow. Both consumers import the shared value from a third output file.
+```js
+// form-chunk.js
+import { messages } from './shared-chunk.js';
 
-But "shared dependency" does not automatically mean "separate shared file." Another possible arrangement is:
+function renderForm() {
+  return messages.title;
+}
 
-```mermaid
-%% plain %%
-%% label: Combined chunk %%
-%%{init: {"look": "classic"}}%%
-flowchart LR
-  Page["page-chunk.js<br/>renderPage"] -->|import t as messages| Form["form-chunk.js<br/>renderForm + messages"]
+export { renderForm };
 ```
 
-These are illustrative layouts, not a claim that the small example must produce either one under every configuration. The actual decision depends on the dependency graph and chunking rules.
+```js
+// page-chunk.js
+import { messages } from './shared-chunk.js';
+
+function renderPage() {
+  return messages.title;
+}
+
+export { renderPage };
+```
+
+Both imports point to the same `shared-chunk.js` module. The `messages` object is created there once, and both functions read that same object. Sharing does not mean copying the declaration into both files.
+
+**Layout 2: put the shared value beside one of its consumers**
+
+The bundler could instead put `messages.js` and `form.js` into one output file. There is no separate `shared-chunk.js` in this layout:
+
+```js
+// form-chunk.js
+const messages = { title: 'Hello' };
+
+function renderForm() {
+  return messages.title; // Same file: use the binding directly.
+}
+
+// Another chunk still needs messages, so expose it as t.
+export { renderForm, messages as t };
+```
+
+```js
+// page-chunk.js
+import { t as messages } from './form-chunk.js';
+
+function renderPage() {
+  return messages.title;
+}
+
+export { renderPage };
+```
+
+Now `renderForm` can access `messages` directly. Its original import disappears because both declarations are in the same output file.
+
+`renderPage` is still in another file. Its import now points to `form-chunk.js`, where the shared value lives.
+
+That is why the bundler adds `messages as t` to that file's exports: `page-chunk.js` needs a way to reach it.
+
+The two sides of the connection are worth reading together:
+
+- `export { messages as t }` exposes the local binding under the name `t`.
+- `import { t as messages }` accesses that export using the local name `messages`.
+
+The alias `t` is only a generated name; it does not perform sharing or deduplication. Both functions still read the same object. Exporting and importing it as `messages` would work too.
+
+So the difference is concrete: in the first layout, both consumers import from a third file; in the second, one consumer imports the shared binding from the other consumer's chunk.
+
+The dependency graph and chunking rules determine the actual layout.
 
 At this point, a natural question is whether users can influence those decisions. They can: Rolldown's [`output.codeSplitting`](https://rolldown.rs/in-depth/manual-code-splitting) option provides manual grouping rules, including ways to select modules for named chunks.
 
@@ -116,45 +176,13 @@ export default {
 };
 ```
 
-The distinction matters: chunk grouping controls where modules go; signature preservation constrains what entry consumers can see. The latter can require a forwarding chunk, but it does not directly select one of our two layouts. Nor does setting it to `'strict'` fix every namespace bug, as the reported dynamic-import case will show.
+The distinction matters: chunk grouping controls where modules go; signature preservation constrains what entry consumers can see. The latter can require a forwarding chunk, but it does not directly select one of our two layouts.
 
-For now, suppose we get the second layout.
+Nor does setting it to `'strict'` fix every namespace bug, as the reported dynamic-import case will show.
 
-Inside `form-chunk.js`, the function and the value it uses now live together:
+This was where my Feopack comparison had been misleading me. Feopack already had a communication mechanism: its runtime looked up a module by ID and returned that module's exports.
 
-```js
-const messages = { title: 'Hello' };
-
-function renderForm() {
-  return messages.title;
-}
-```
-
-The source-level import between those modules no longer needs to remain as a file-level import. `renderForm` can directly access the binding.
-
-`renderPage`, however, lives in another output file. It needs a way to reach that same binding. The bundler can generate a connection:
-
-```js
-// form-chunk.js
-export { renderForm, messages as t };
-```
-
-```js
-// page-chunk.js
-import { t as messages } from './form-chunk.js';
-
-function renderPage() {
-  return messages.title;
-}
-
-export { renderPage };
-```
-
-Now the extra export has a clear consumer.
-
-The `export` makes the binding accessible from another chunk. The `import` accesses it. The alias `t` is only a generated name; it does not perform sharing or deduplication. Exporting the binding as `messages` would work too.
-
-This was where my Feopack comparison had been misleading me. Feopack already had a communication mechanism: its runtime looked up a module by ID and returned that module's exports. In this ESM output, native imports and exports connect the output files.
+In this ESM output, native imports and exports connect the output files.
 
 ```mermaid
 %% plain %%
@@ -167,7 +195,9 @@ flowchart LR
 
 Both arrangements let consumers access a shared dependency. They preserve module boundaries in different ways.
 
-It also helped to locate this work inside the compiler. Feopack's `seal()` builds the chunk graph and generates assets. Rolldown's [`GenerateStage`](https://github.com/rolldown/rolldown/blob/2a53ec71548752402c3db1c0435cdd32fdf1131d/crates/rolldown/src/stages/generate_stage/mod.rs) has broadly similar responsibilities, with considerably more analysis and planning between those steps.
+It also helped to locate this work inside the compiler. Feopack's `seal()` builds the chunk graph and generates assets.
+
+Rolldown's [`GenerateStage`](https://github.com/rolldown/rolldown/blob/2a53ec71548752402c3db1c0435cdd32fdf1131d/crates/rolldown/src/stages/generate_stage/mod.rs) has broadly similar responsibilities, with considerably more analysis and planning between those steps.
 
 One small naming detail helped me read this code: `meta` is short for *metadata*, not a Rust keyword; here, it holds flags describing an entry chunk, such as whether it is user-defined, dynamically imported, or emitted by a plugin.
 
@@ -203,9 +233,15 @@ Object.keys(form);
 
 It has no knowledge of the original boundary between `messages.js` and `form.js`. Both names are exports of `form-chunk.js`.
 
-The real Rolldown report followed this pattern. A form module and its translation dependency ended up in one chunk, while another chunk needed the translations. The generated chunk exposed an internal alias, and a bare dynamic import returned that alias alongside the form's public exports.
+The real Rolldown report followed this pattern. A form module and its translation dependency ended up in one chunk, while another chunk needed the translations.
 
-This mattered because the application enumerated the imported namespace and interpreted its exports as form definitions. An internal binding became an unexpected application value. The issue included a reproduction using default options in Rolldown 1.2.16; explicitly setting `preserveEntrySignatures: 'strict'` still exposed the extra export. This was not a case of the user opting into `'allow-extension'`. [Original report and reproduction](https://github.com/rolldown/rolldown/issues/11397)
+The generated chunk exposed an internal alias, and a bare dynamic import returned that alias alongside the form's public exports.
+
+This mattered because the application enumerated the imported namespace and interpreted its exports as form definitions. An internal binding became an unexpected application value.
+
+The issue included a reproduction using default options in Rolldown 1.2.16; explicitly setting `preserveEntrySignatures: 'strict'` still exposed the extra export.
+
+This was not a case of the user opting into `'allow-extension'`. [Original report and reproduction](https://github.com/rolldown/rolldown/issues/11397)
 
 The internal export itself had a legitimate purpose. Removing it would break the other chunk's access to the shared value.
 
@@ -245,11 +281,17 @@ flowchart TB
   Page["page-chunk.js"] -->|import internal t| Chunk
 ```
 
-That is the direction of the [patch I have been exploring](https://github.com/rolldown/rolldown/compare/main...CoderSerio:rolldown:fix/dynamic-import-namespace): reuse Rolldown's [existing entry-facade machinery](https://github.com/rolldown/rolldown/blob/2a53ec71548752402c3db1c0435cdd32fdf1131d/crates/rolldown/src/stages/generate_stage/entry_facades.rs) for affected dynamic entries. As of November 1, 2026, this is an experimental patch that has not landed upstream.
+That is the direction of the [patch I have been exploring](https://github.com/rolldown/rolldown/compare/main...CoderSerio:rolldown:fix/dynamic-import-namespace): reuse Rolldown's [existing entry-facade machinery](https://github.com/rolldown/rolldown/blob/2a53ec71548752402c3db1c0435cdd32fdf1131d/crates/rolldown/src/stages/generate_stage/entry_facades.rs) for affected dynamic entries.
 
-There is a visible tradeoff. In our reproduction, the facade approach produces four JavaScript files instead of three. Rollup's namespace-extraction approach keeps three. Correct exports are essential, but the extra file is still something to evaluate.
+As of November 1, 2026, this is an experimental patch that has not landed upstream.
 
-The namespace also has to preserve behavior, not just names. A normal object literal can capture the current value of a mutable export. ESM re-exports retain live bindings, which is one reason reusing the existing export machinery is attractive.
+There is a visible tradeoff. In our reproduction, the facade approach produces four JavaScript files instead of three. Rollup's namespace-extraction approach keeps three.
+
+Correct exports are essential, but the extra file is still something to evaluate.
+
+The namespace also has to preserve behavior, not just names. A normal object literal can capture the current value of a mutable export.
+
+ESM re-exports retain live bindings, which is one reason reusing the existing export machinery is attractive.
 
 The regression therefore checks more than `Object.keys()`: it also updates an exported variable, imports the module again, and verifies that the other chunk can still use the shared data.
 
