@@ -133,20 +133,7 @@ function renderPage() {
 export { renderPage };
 ```
 
-Now `renderForm` can access `messages` directly. Its original import disappears because both declarations are in the same output file.
-
-`renderPage` is still in another file. Its import now points to `form-chunk.js`, where the shared value lives.
-
-That is why the bundler adds `messages as t` to that file's exports: `page-chunk.js` needs a way to reach it.
-
-The two sides of the connection are worth reading together:
-
-- `export { messages as t }` exposes the local binding under the name `t`.
-- `import { t as messages }` accesses that export using the local name `messages`.
-
-The alias `t` is only a generated name; it does not perform sharing or deduplication. Both functions still read the same object. Exporting and importing it as `messages` would work too.
-
-So the difference is concrete: in the first layout, both consumers import from a third file; in the second, one consumer imports the shared binding from the other consumer's chunk.
+In the second layout, `renderForm` reads the local `messages` binding directly. Only `page-chunk.js` needs the extra export. The name `t` could just as well be `messages`. Both functions would still read the same object.
 
 The dependency graph and chunking rules determine the actual layout.
 
@@ -184,22 +171,36 @@ This was where my Feopack comparison had been misleading me. Feopack already had
 
 In this ESM output, native imports and exports connect the output files.
 
-```mermaid
-%% plain %%
-%% label: Module table vs ESM %%
-%%{init: {"look": "classic"}}%%
-flowchart LR
-  Feopack["Feopack consumer"] -->|"__feopack_import__(id)"| Runtime["Runtime module table<br/>Cached module.exports"]
-  Consumer["ESM chunk consumer"] -->|"import { t } from chunk"| Native["Native ESM module<br/>Live export binding"]
-```
+<code-flow id="module-table-vs-esm" class="binding-map mermaid-pixel-frame" data-diagram-label="Module table vs ESM">
+<figure>
+<figcaption>How does <code>page.js</code> reach <code>messages</code>?</figcaption>
+<section class="lookup-lane" data-runtime="feopack">
+<header><small>01 / Feopack</small><strong>Look up a module by ID</strong></header>
+<div class="lookup-route">
+<div class="lookup-card"><small>Consumer · page.js</small><pre><code>const { <b>messages</b> } =
+  __feopack_import__(id);</code></pre></div>
+<svg class="lookup-arrow" aria-hidden="true" viewBox="0 0 32 16"><path d="M1 8h28m-7-6 7 6-7 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+<div class="lookup-card"><small>Runtime · messages.js</small><p>The runtime returns the cached exports object for <code>id</code>. The consumer reads its <code><b>messages</b></code> property.</p></div>
+</div>
+</section>
+<section class="lookup-lane" data-runtime="esm">
+<header><small>02 / Native ESM</small><strong>Import a binding by name</strong></header>
+<div class="lookup-route">
+<div class="lookup-card"><small>Consumer · page-chunk.js</small><pre><code>import { <em>t</em> as <b>messages</b> }
+  from './form-chunk.js';</code></pre></div>
+<svg class="lookup-arrow" aria-hidden="true" viewBox="0 0 32 16"><path d="M1 8h28m-7-6 7 6-7 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+<div class="lookup-card"><small>Provider · form-chunk.js</small><pre><code>export { renderForm,
+  <b>messages</b> as <em>t</em> };</code></pre></div>
+</div>
+</section>
+</figure>
+</code-flow>
 
 Both arrangements let consumers access a shared dependency. They preserve module boundaries in different ways.
 
 It also helped to locate this work inside the compiler. Feopack's `seal()` builds the chunk graph and generates assets.
 
 Rolldown's [`GenerateStage`](https://github.com/rolldown/rolldown/blob/2a53ec71548752402c3db1c0435cdd32fdf1131d/crates/rolldown/src/stages/generate_stage/mod.rs) has broadly similar responsibilities, with considerably more analysis and planning between those steps.
-
-One small naming detail helped me read this code: `meta` is short for *metadata*, not a Rust keyword; here, it holds flags describing an entry chunk, such as whether it is user-defined, dynamically imported, or emitted by a plugin.
 
 The name `GenerateStage` initially made me think mainly of printing code. But deciding which bindings must cross chunk boundaries is part of preparing that code. Once the compiler has placed modules into chunks, it must rebuild the connections that the new layout requires.
 
@@ -262,38 +263,47 @@ import('./form-chunk.js').then(chunk => chunk.formNamespace);
 
 The report also showed that Rolldown already used namespace extraction for some other dynamic-entry layouts. This case did not take that path.
 
-Another approach is a small forwarding module, often called a *facade*. For our simplified example, it could look like this:
+Another approach is a small forwarding module, often called a *facade*. Here is the layout I tried in the reproduction.
 
-```js
-// form-entry.js
-export { renderForm } from './form-chunk.js';
+<code-flow class="mermaid-pixel-frame" data-diagram-label="Entry facade">
+<figure>
+<figcaption>Two readers of the same chunk</figcaption>
+<div class="flow-grid">
+<div class="flow-node flow-public">
+<strong>form-entry.js</strong><br/>The application loads this facade with <code>import()</code>.
+
+```js showLineNumbers=false
+export { renderForm }
+  from './form-chunk.js';
 ```
 
-The application dynamically imports `form-entry.js`. Other chunks can still import internal bindings from `form-chunk.js`.
+</div>
+<div class="flow-node flow-internal">
+<strong>page-chunk.js</strong><br/>The page reads the shared translations.
 
-```mermaid
-%% plain %%
-%% label: Entry facade %%
-%%{init: {"look": "classic"}}%%
-flowchart TB
-  App["Application"] -->|dynamic import| Entry["form-entry.js<br/>Public export: renderForm"]
-  Entry -->|re-export renderForm| Chunk["form-chunk.js<br/>Exports: renderForm + internal t"]
-  Page["page-chunk.js"] -->|import internal t| Chunk
+```js showLineNumbers=false
+import { t as messages }
+  from './form-chunk.js';
 ```
 
-That is the direction of the [patch I have been exploring](https://github.com/rolldown/rolldown/compare/main...CoderSerio:rolldown:fix/dynamic-import-namespace): reuse Rolldown's [existing entry-facade machinery](https://github.com/rolldown/rolldown/blob/2a53ec71548752402c3db1c0435cdd32fdf1131d/crates/rolldown/src/stages/generate_stage/entry_facades.rs) for affected dynamic entries.
+</div>
+<div class="flow-edge">Facade re-exports <code>renderForm</code><svg viewBox="0 0 16 24" aria-hidden="true"><path d="M8 1v20m-6-7 6 7 6-7" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+<div class="flow-edge">Page imports <code>t</code><svg viewBox="0 0 16 24" aria-hidden="true"><path d="M8 1v20m-6-7 6 7 6-7" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+<div class="flow-node flow-output">
+<strong>form-chunk.js</strong><br/>Both readers get their bindings from this file.
 
-As of November 1, 2026, this is an experimental patch that has not landed upstream.
+```js showLineNumbers=false
+export { renderForm, messages as t };
+```
 
-There is a visible tradeoff. In our reproduction, the facade approach produces four JavaScript files instead of three. Rollup's namespace-extraction approach keeps three.
+</div>
+</div>
+</figure>
+</code-flow>
 
-Correct exports are essential, but the extra file is still something to evaluate.
+I tried this in a patch that reused Rolldown's existing entry facades. In the reproduction, the extra file kept `t` out of the form namespace and preserved live bindings. Rollup produced the expected namespace in three files, while my patch produced four.
 
-The namespace also has to preserve behavior, not just names. A normal object literal can capture the current value of a mutable export.
-
-ESM re-exports retain live bindings, which is one reason reusing the existing export machinery is attractive.
-
-The regression therefore checks more than `Object.keys()`: it also updates an exported variable, imports the module again, and verifies that the other chunk can still use the shared data.
+> **Update (November 2, 2026).** My PR was closed after the maintainer found regressions in CommonJS interop and module execution order. One generated CommonJS facade even tried to read a variable declared in a different file. I’m still glad I took this step. I went from puzzling over an extra `t` to writing a patch, and the review gave me concrete cases to learn from. [Maintainer feedback on PR #11412](https://github.com/rolldown/rolldown/pull/11412#issuecomment-6569085179)
 
 Feopack's single-chunk runtime let me postpone these questions. Reading the Rolldown issue made them concrete: after modules are placed into separate output files, the compiler needs to connect those files while preserving the interfaces that source-level imports refer to.
 

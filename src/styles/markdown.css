@@ -197,13 +197,6 @@
         stroke-width: 1.5px !important;
     }
 
-    .mermaid-diagram.is-plain .nodeLabel,
-    .mermaid-diagram.is-plain .cluster-label,
-    .mermaid-diagram.is-plain .edgeLabel {
-        font-size: 15px !important;
-        font-weight: 600 !important;
-    }
-
     .mermaid-diagram.is-plain .node.stale > :is(rect, polygon, path) {
         stroke: #f43f5e !important;
         stroke-width: 2px !important;

@@ -110,11 +110,12 @@ async function getMermaid() {
 	return mermaidPromise;
 }
 
-function initializeMermaid(mermaid: any, isBuildComparison: boolean) {
+function initializeMermaid(mermaid: any, isBuildComparison: boolean, isPlain: boolean) {
 	mermaid.initialize({
 		startOnLoad: false,
 		securityLevel: "strict",
 		look: "handDrawn",
+		...(isPlain ? { htmlLabels: false } : {}),
 		fontFamily: mermaidFontFamily,
 		// Include title typography during layout, before Mermaid measures labels.
 		themeCSS: isBuildComparison
@@ -127,6 +128,7 @@ function initializeMermaid(mermaid: any, isBuildComparison: boolean) {
 		theme: isDarkMode() ? "dark" : "base",
 		themeVariables: {
 			fontFamily: mermaidFontFamily,
+			...(isPlain ? { fontSize: "15px" } : {}),
 			primaryColor: isDarkMode() ? "#1f2937" : "#f8fafc",
 			primaryTextColor: isDarkMode() ? "#f8fafc" : "#1f2937",
 			primaryBorderColor: "#8b5cf6",
@@ -168,7 +170,8 @@ async function renderMermaidDiagram(diagram: HTMLElement) {
 	try {
 		const mermaid = await getMermaid();
 		await document.fonts.ready;
-		initializeMermaid(mermaid, isBuildComparison);
+		if (isPlain) await document.fonts.load('15px "JetBrains Mono Variable"');
+		initializeMermaid(mermaid, isBuildComparison, isPlain);
 		const { svg, bindFunctions } = await mermaid.render(id, source);
 		diagram.innerHTML = svg;
 		if (isBuildComparison) {
