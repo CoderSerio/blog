@@ -6,33 +6,56 @@ import ImageWrapper from "../../media/ImageWrapper/index.astro";
 
 const config = profileConfig;
 ---
-<div class="card-base p-3">
-    <a aria-label="Go to About Page" href={url('/about/')}
-       class="group block relative mx-auto mt-1 lg:mx-0 lg:mt-0 mb-3
-       max-w-[12rem] lg:max-w-none overflow-hidden rounded-xl active:scale-95">
-        <div class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50
-        w-full h-full z-50 flex items-center justify-center">
-            <Icon name="fa6-regular:address-card"
-                  class="transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white text-5xl">
-            </Icon>
-        </div>
-        <ImageWrapper src={config.avatar || ""} alt="Profile Image of the Author" class="mx-auto lg:w-full h-full lg:mt-0 "></ImageWrapper>
-    </a>
-    <div class="px-2">
-        <div class="font-bold text-xl text-center mb-1 dark:text-neutral-50 transition">{config.name}</div>
-        <div class="h-1 w-5 bg-[var(--primary)] mx-auto rounded-full mb-2 transition"></div>
-        <div class="text-center text-neutral-400 mb-2.5 transition">{config.bio}</div>
-        <div class="flex flex-wrap gap-2 justify-center mb-1">
-            {config.links.length > 1 && config.links.map(item =>
-                    <a rel="me" aria-label={item.name} href={item.url} target="_blank" class="btn-regular rounded-lg h-10 w-10 active:scale-90">
-                        <Icon name={item.icon} class="text-[1.5rem]"></Icon>
-                    </a>
-            )}
-            {config.links.length == 1 && <a rel="me" aria-label={config.links[0].name} href={config.links[0].url} target="_blank"
-                                            class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95">
-                <Icon name={config.links[0].icon} class="text-[1.5rem]"></Icon>
-                {config.links[0].name}
-            </a>}
+<div id="author-profile" class="profile-card card-base p-3">
+    <div class="profile-layout">
+        <a aria-label="Go to About Page" href={url('/about/')}
+           class="profile-avatar group block relative mx-auto mt-1 lg:mx-0 lg:mt-0 mb-3
+           max-w-[12rem] lg:max-w-none overflow-hidden rounded-xl active:scale-95">
+            <div class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50
+            w-full h-full z-50 flex items-center justify-center">
+                <Icon name="fa6-regular:address-card"
+                      class="transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white text-5xl">
+                </Icon>
+            </div>
+            <ImageWrapper src={config.avatar || ""} alt="Profile Image of the Author" class="mx-auto lg:w-full h-full lg:mt-0 "></ImageWrapper>
+        </a>
+        <div class="profile-details px-2 text-center">
+            <div class="font-bold text-xl mb-1 dark:text-neutral-50 transition">{config.name}</div>
+            <div class="profile-rule h-1 w-5 bg-[var(--primary)] mx-auto rounded-full mb-2 transition"></div>
+            <div class="text-neutral-400 mb-2.5 transition">{config.bio}</div>
+            <div class="profile-links flex flex-wrap gap-2 justify-center mb-1">
+                {config.links.length > 1 && config.links.map(item =>
+                        <a rel="me" aria-label={item.name} href={item.url} target="_blank" class="btn-regular rounded-lg h-10 w-10 active:scale-90">
+                            <Icon name={item.icon} class="text-[1.5rem]"></Icon>
+                        </a>
+                )}
+                {config.links.length == 1 && <a rel="me" aria-label={config.links[0].name} href={config.links[0].url} target="_blank"
+                                                class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95">
+                    <Icon name={config.links[0].icon} class="text-[1.5rem]"></Icon>
+                    {config.links[0].name}
+                </a>}
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+    .profile-card {
+        container-type: inline-size;
+    }
+
+    @container (min-width: 27rem) {
+        .profile-layout {
+            display: grid;
+            grid-template-columns: clamp(6rem, 18cqi, 8rem) minmax(0, 1fr);
+            align-items: center;
+            gap: clamp(1rem, 4cqi, 2rem);
+            padding: .5rem;
+        }
+
+        .profile-avatar, .profile-rule { margin-inline: 0; }
+        .profile-avatar { margin-block: 0; }
+        .profile-details { padding: 0; text-align: start; }
+        .profile-links { justify-content: flex-start; }
+    }
+</style>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 148" fill="none">
+  <title>Two JavaScript modules compiled into main.js</title>
+  <!-- Two source modules enter the bundle. Their colors reappear inside it. -->
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#a6d9cb" stroke-width="2">
+      <path d="M11 11h12l6 6v14H11z M23 11v7h6"/>
+      <path d="M11 51h12l6 6v14H11z M23 51v7h6" stroke="#efb574"/>
+    </g>
+    <g fill="#fff0cf" font-family="ui-monospace, Menlo, monospace" font-size="15">
+      <text x="38" y="27">index.js</text>
+      <text x="38" y="67">app.js</text>
+    </g>
+    <path d="M119 22h25q11 0 11 11v16q0 12 12 12h13" stroke="#a6d9cb" stroke-width="2.4"/>
+    <path d="M102 62h78" stroke="#efb574" stroke-width="2.4"/>
+    <circle cx="184" cy="62" r="5" fill="#ffe6b2"/>
+    <path d="M184 69v24m-5-5 5 5 5-5" stroke="#ffe6b2" stroke-width="2.4"/>
+    <rect x="8" y="101" width="202" height="39" rx="3" fill="#f8deb0"/>
+    <path d="m21 116-5 5 5 5m8-10 5 5-5 5" stroke="#204749" stroke-width="2"/>
+    <text x="45" y="127" fill="#203e40" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700">main.js</text>
+    <path d="M155 116h40" stroke="#35796e" stroke-width="4"/>
+    <path d="M155 125h27" stroke="#ab642c" stroke-width="4"/>
+  </g>
+</svg>

@@ -6,6 +6,8 @@ export type SeriesLink = {
 export type SeriesConfig = {
 	title: string;
 	description?: string;
+	coverArt?: string;
+	coverSubtitle?: string;
 	links?: readonly SeriesLink[];
 	posts: readonly string[];
 };
@@ -13,6 +15,8 @@ export type SeriesConfig = {
 export const series: Record<string, SeriesConfig> = {
 	feopack: {
 		title: "Feopack",
+		coverArt: "/series/feopack.svg",
+		coverSubtitle: "Building a bundler in Rust",
 		description: "Notes from learning Rspack by building a small Rust bundler.",
 		links: [
 			{

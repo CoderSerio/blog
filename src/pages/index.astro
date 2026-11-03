@@ -1,0 +1,65 @@
+---
+import LibraryTabs from "@components/archive/LibraryTabs/index.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getPostsBySlugs } from "@utils/content-utils";
+import { getSeriesUrlBySlug, url } from "@utils/url-utils";
+import { getAllSeries } from "@/content/series";
+
+const books = (
+	await Promise.all(
+		getAllSeries().map(async (series) => ({
+			...series,
+			href: getSeriesUrlBySlug(series.slug),
+			chapters: (await getPostsBySlugs(series.posts)).length,
+		})),
+	)
+).filter((book) => book.chapters > 0);
+const shelf = [
+	...books,
+	{
+		title: "The Other Posts",
+		href: url("/writing/"),
+		coverArt: "/series/other-posts.svg",
+		description: "Standalone articles from the blog.",
+	},
+];
+---
+<MainGridLayout title="Series">
+    <LibraryTabs current="Series" />
+    <section class="shelf card-base" aria-labelledby="shelf-title">
+        <h1 id="shelf-title" class="text-90">The bookshelf</h1>
+        <ul>
+            {shelf.map(book => (
+                <li>
+                    <a class="book" id={"slug" in book ? `book-${book.slug}` : undefined} href={book.href}>
+                        <div class:list={["cover", { miscellany: book === shelf.at(-1) }]} aria-hidden="true">
+                            <strong>{book.title}</strong>
+                            {"coverSubtitle" in book && book.coverSubtitle && <span class="cover-subtitle">{book.coverSubtitle}</span>}
+                            {book.coverArt && <img src={url(book.coverArt)} alt="" width="240" height="135" />}
+                            <span class="byline">Carbon</span>
+                        </div>
+                        <h2 class="text-90">{book.title}</h2>
+                    </a>
+                    {book.description && <p class="text-75">{book.description}</p>}
+                </li>
+            ))}
+        </ul>
+    </section>
+</MainGridLayout>
+<style>
+.shelf { padding: clamp(1.25rem, 3vw, 2.25rem); }
+.shelf h1 { font: 650 clamp(1.6rem, 3vw, 2.3rem)/1.2 Georgia, serif; margin-bottom: 1.6rem; }
+.shelf ul { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); gap: 2rem; }
+.book { scroll-margin-top: 5.5rem; display: block; width: min(100%, 14rem); }
+.book:focus-visible { outline: 2px solid var(--primary); outline-offset: 5px; }
+.cover { position: relative; box-sizing: border-box; width: min(100%, 14rem); aspect-ratio: 3/4; padding: 1.3rem 1rem 1.15rem 1.65rem; display: flex; flex-direction: column; align-items: flex-start; color: #fff2d3; background: linear-gradient(90deg,#103538 2%,#275854 4%,#164345 7%,#215553 88%,#204b49); border-radius: 2px 5px 5px 2px; border-right: 1px solid #9ea999; box-shadow: 2px 2px #efe8d3, 3px 3px #a9ac98, 4px 4px #e4dfd0, 5px 8px 12px #0624292e; }
+.byline { font: 600 .62rem/1.5 ui-monospace, monospace; letter-spacing: .11em; text-transform: uppercase; }
+.cover.miscellany { background: linear-gradient(90deg,#492339 2%,#734259 4%,#512c42 7%,#674459 88%,#59394d); }
+.cover strong { font: 500 clamp(1.8rem, 3vw, 2.5rem)/1.1 Georgia, serif; margin-top: .65rem; overflow-wrap: anywhere; }
+.cover-subtitle { margin-top: .35rem; font-size: .88rem; line-height: 1.3; color: #d2e5d8; }
+.cover img { width: 100%; height: auto; min-height: 0; object-fit: contain; flex: 1; margin: .6rem 0; }
+.byline { margin-top: auto; }
+.book h2 { margin: 1rem 0 .12rem; font-size: 1.15rem; font-weight: 700; }
+.book:hover h2 { color: var(--primary); }
+.shelf p { margin: .45rem 0 0; max-width: 27ch; font-size: .92rem; line-height: 1.5; }
+</style>

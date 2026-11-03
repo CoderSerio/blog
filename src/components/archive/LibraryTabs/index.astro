@@ -1,0 +1,21 @@
+---
+import { url } from "@utils/url-utils";
+
+interface Props {
+	current: "Posts" | "Series";
+}
+const { current } = Astro.props;
+---
+<nav aria-label="Browse writing" class="library-tabs card-base">
+    {(["Series", "Posts"] as const).map(label => (
+        <a href={url(label === "Series" ? "/" : "/writing/")} aria-current={label === current ? "page" : undefined}>{label}</a>
+    ))}
+</nav>
+<style>
+.library-tabs { display: flex; gap: 1.5rem; align-items: stretch; padding-inline: clamp(1rem, 3vw, 2rem); margin-bottom: 1rem; }
+.library-tabs a { position: relative; padding: .95rem .2rem; color: #242934; font-size: 1.1rem; font-weight: 650; }
+:global(.dark) .library-tabs a:not([aria-current]):not(:hover) { color: white; }
+.library-tabs a:hover, .library-tabs a[aria-current] { color: var(--primary); }
+.library-tabs a[aria-current]::after { content: ""; position: absolute; inset: auto 0 0; height: 3px; border-radius: 3px; background: currentColor; }
+.library-tabs a:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+</style>
