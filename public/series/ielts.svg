@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 148" fill="none">
+  <title>Study notebook with a teacher's feedback</title>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 27c29-9 57-5 84 7v101c-27-12-55-16-84-7z" fill="#f8deb0" stroke="#fff0cf" stroke-width="2"/>
+    <path d="M108 34c27-12 55-16 84-7v101c-29-9-57-5-84 7z" fill="#d2e5d8" stroke="#fff0cf" stroke-width="2"/>
+    <path d="M108 36v96" stroke="#ab642c" stroke-width="2"/>
+    <path d="M39 49c17-3 35-1 51 5M39 65c17-3 35-1 51 5M39 81c17-3 35-1 40 2" stroke="#35796e" stroke-width="3"/>
+    <path d="m127 69 5 5 10-12m-15 29 5 5 10-12" stroke="#35796e" stroke-width="3"/>
+    <path d="M151 67h25m-25 22h20" stroke="#204749" stroke-width="3"/>
+    <path d="M143 5h63v34h-24l-11 10V39h-28z" fill="#efb574" stroke="#fff0cf" stroke-width="2"/>
+    <path d="M154 17h39m-39 10h25" stroke="#204749" stroke-width="2"/>
+    <path d="m55 110 26-27 8 8-27 26-12 4z" fill="#efb574" stroke="#ab642c" stroke-width="2"/>
+  </g>
+</svg>

@@ -13,6 +13,14 @@ export type SeriesConfig = {
 };
 
 export const series: Record<string, SeriesConfig> = {
+	ielts: {
+		title: "IELTS 学习笔记",
+		coverArt: "/series/ielts.svg",
+		coverSubtitle: "Notes, questions & feedback",
+		description:
+			"Course notes, questions, and teacher feedback. Mainly in English, with Chinese notes to support learning and writing practice.",
+		posts: ["ielts-study-notes", "ielts-lesson-01-talking-about-a-trip"],
+	},
 	feopack: {
 		title: "Feopack",
 		coverArt: "/series/feopack.svg",
